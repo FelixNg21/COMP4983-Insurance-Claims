@@ -95,12 +95,11 @@ def lin_reg(data):
 
 
 data = pd.read_csv('trainingset.csv')
-# lin_reg(data)
+lin_reg(data)
 
 
+# https://github.com/jafetgado/resreg
 # SMOTER
-
-
 # define what is a low and high claim
 bins = [0.1]
 
@@ -160,8 +159,8 @@ def no_resampling():
         reg = RandomForestRegressor(n_estimators=50, max_features=0.5, n_jobs=-1, random_state=0)
         r2, f1, msebin = implementML(X_train, y_train, X_test, y_test,
                                      reg)  # Fit regressor and evaluate performance
-        r2s.append(r2);
-        f1s.append(f1);
+        r2s.append(r2)
+        f1s.append(f1)
         msebins.append(msebin)
 
     # Average performance
@@ -185,7 +184,7 @@ def smoter():
 
     # Parameters
     overs = ['balance', 'average', 'extreme']
-    ks = [5, 10, 15]  # nearest neighbors
+    ks = [x for x in range(1,10) if x%2]  # nearest neighbors
     params = list(itertools.product(overs, ks))
 
     # Empty lists for storing results
@@ -240,7 +239,184 @@ def smoter():
     # Plot results
     plotPerformance(msebin, msebinerr, f1, r2, title='SMOTER')
 
+def gauss():
+    X = data.drop('ClaimAmount', axis='columns', inplace=False)
+    y = data.loc[:, 'ClaimAmount']
+    np.random.seed(seed=0)
+    sample = np.random.choice(range(len(y)), 500)
+    X, y = X.loc[sample, :], y[sample]
 
-no_resampling()
-smoter()
-print(CACHE)
+    # Parameters
+    overs = ['balance', 'average', 'extreme']
+    deltas = [0.01, 0.1, 0.5]  # amount of Gaussian noise
+    params = list(itertools.product(overs, deltas))
+
+    # Empty lists for storing results
+    r2store, f1store, msebinstore = [], [], []
+    r2errstore, f1errstore, msebinerrstore = [], [], []
+
+    # Grid search
+    for over, delta in params:
+        kfold = KFold(n_splits=5, shuffle=True, random_state=0)
+        r2s, f1s, msebins = [], [], []
+
+        # Fivefold cross validation
+        for train_index, test_index in kfold.split(X):
+            X_train, y_train = X.iloc[train_index, :], y.iloc[train_index]
+            X_test, y_test = X.iloc[test_index, :], y.iloc[test_index]
+
+            # Resample training data (Gaussian Noise)
+            relevance = resreg.sigmoid_relevance(y_train, cl=None, ch=bins[0])
+            X_train, y_train = resreg.gaussian_noise(X_train, y_train, relevance,
+                                                     relevance_threshold=0.5, delta=delta,
+                                                     over=over,
+                                                     random_state=0)
+
+            # Fit regressor and evaluate performance
+            reg = RandomForestRegressor(n_estimators=50, max_features=0.5, n_jobs=-1,
+                                        random_state=0)
+            r2, f1, msebin = implementML(X_train, y_train, X_test, y_test, reg)
+            r2s.append(r2)
+            f1s.append(f1)
+            msebins.append(msebin)
+        r2, f1, msebin = np.mean(r2s), np.mean(f1), np.mean(msebins, axis=0)
+        r2err, f1err, msebinerr = np.std(r2s) / np.sqrt(5), np.std(f1s) / np.sqrt(5), \
+                                  np.std(msebins, axis=0) / np.sqrt(5)
+
+        # Store grid search results
+        r2store.append(r2)
+        f1store.append(f1)
+        msebinstore.append(msebin)
+        r2errstore.append(r2err)
+        f1errstore.append(f1err)
+        msebinerrstore.append(msebinerr)
+
+    # Determine the best parameters
+    best = np.argsort(f1store)[-1]  # Which is the best
+    print('''Best parameters:
+        over={0}; delta={1}'''.format(params[best][0], params[best][1]))
+    f1, r2, msebin = f1store[best], r2store[best], msebinstore[best]
+    f1err, rerr, msebinerr = f1errstore[best], r2errstore[best], msebinerrstore[best]
+
+    # Save results
+    CACHE['GN'] = [r2, f1, msebin, r2err, f1err, msebinerr]
+
+    # Plot results
+    plotPerformance(msebin, msebinerr, f1, r2, title='Gaussian noise (GN)')
+
+def wercs():
+    X = data.drop('ClaimAmount', axis='columns', inplace=False)
+    y = data.loc[:, 'ClaimAmount']
+    np.random.seed(seed=0)
+    sample = np.random.choice(range(len(y)), 500)
+    X, y = X.loc[sample, :], y[sample]
+
+    # Parameters
+    overs = [0.5, 0.75, 1.0]  # percent of samples added
+    unders = [0.5, 0.75]  # percent of samples removed
+    noises = [True, False]  # Whether to add Gaussian noise to oversampled data
+    deltas = [0.01, 0.1, 0.5]  # amount of Gaussian noise
+    params = list(itertools.product(overs, unders, [noises[1]])) + \
+             list(itertools.product(overs, unders, [noises[0]], deltas))
+
+    # Empty lists for storing results
+    r2store, f1store, msebinstore = [], [], []
+    r2errstore, f1errstore, msebinerrstore = [], [], []
+
+    # Grid search
+    for param in params:
+        if len(param) == 4:
+            over, under, noise, delta = param
+        else:
+            over, under, noise = param
+            delta = None
+        kfold = KFold(n_splits=5, shuffle=True, random_state=0)
+        r2s, f1s, msebins = [], [], []
+
+        # Fivefold cross validation
+        for train_index, test_index in kfold.split(X):
+            X_train, y_train = X.iloc[train_index, :], y.iloc[train_index]
+            X_test, y_test = X.iloc[test_index, :], y.iloc[test_index]
+
+            # Resample training data (WERCS)
+            relevance = resreg.sigmoid_relevance(y_train, cl=None, ch=bins[0])
+            X_train, y_train = resreg.wercs(X_train, y_train, relevance, over=over,
+                                            under=under, noise=noise, delta=delta, random_state=0)
+
+            # Fit regressor and evaluate performance
+            reg = RandomForestRegressor(n_estimators=50, max_features=0.5, n_jobs=-1,
+                                        random_state=0)
+            r2, f1, msebin = implementML(X_train, y_train, X_test, y_test, reg)
+            r2s.append(r2)
+            f1s.append(f1)
+            msebins.append(msebin)
+        r2, f1, msebin = np.mean(r2s), np.mean(f1), np.mean(msebins, axis=0)
+        r2err, f1err, msebinerr = np.std(r2s) / np.sqrt(5), np.std(f1s) / np.sqrt(5), \
+                                  np.std(msebins, axis=0) / np.sqrt(5)
+
+        # Store grid search results
+        r2store.append(r2);
+        f1store.append(f1);
+        msebinstore.append(msebin)
+        r2errstore.append(r2err);
+        f1errstore.append(f1err);
+        msebinerrstore.append(msebinerr)
+
+    # Determine the best parameters
+    best = np.argsort(f1store)[-1]  # Which is the best
+    bestparam = params[best]
+    if len(param) == 4:
+        over, under, noise, delta = param
+    else:
+        over, under, noise = param
+        delta = None
+    print(f'''Best parameters:
+        over={over}; under={under}; noise={noise}; delta={delta}''')
+    f1, r2, msebin = f1store[best], r2store[best], msebinstore[best]
+    f1err, rerr, msebinerr = f1errstore[best], r2errstore[best], msebinerrstore[best]
+
+    # Save results
+    CACHE['WERCS'] = [r2, f1, msebin, r2err, f1err, msebinerr]
+
+    # Plot results
+    plotPerformance(msebin, msebinerr, f1, r2, title='WERCS')
+
+
+# Data from CACHE
+r2s = [val[0] for val in CACHE.values()]
+r2errs = [val[3] for val in CACHE.values()]
+f1s = [val[1] for val in CACHE.values()]
+f1errs = [val[4] for val in CACHE.values()]
+msebins = np.asarray([val[2] for val in CACHE.values()])
+msebinerrs = np.asarray([val[5] for val in CACHE.values()])
+keys = CACHE.keys()
+
+# # Plot r2
+# plt.bar(range(len(keys)), r2s, yerr=r2errs, capsize=3, color='royalblue',
+#        linewidth=1, edgecolor='black')
+# _ = plt.xticks(range(len(keys)), keys, rotation=45)
+# plt.ylabel('R2')
+# plt.show()
+#
+# # Plot F1
+# plt.bar(range(len(keys)), f1s, yerr=f1errs, capsize=3, color='crimson',
+#        linewidth=1, edgecolor='black')
+# _ = plt.xticks(range(len(keys)), keys, rotation=45)
+# plt.ylabel('F1 score')
+# plt.show()
+#
+# # Plot MSE over bins
+# plt.bar(np.arange(len(keys))-0.2, msebins[:,0], width=0.4, yerr=msebinerrs[:,0],
+#        capsize=3, color='goldenrod', linewidth=1, edgecolor='black', label='y<3.5')
+# plt.bar(np.arange(len(keys))+0.2, msebins[:,1], width=0.4, yerr=msebinerrs[:,1],
+#        capsize=3, color='green', linewidth=1, edgecolor='black', label='y>3.5')
+# _ = plt.xticks(range(len(keys)), keys, rotation=45)
+# plt.ylabel('Mean squared error')
+# plt.legend()
+# plt.show()
+
+# no_resampling()
+# smoter()
+# gauss()
+# wercs()
+# print(CACHE)
