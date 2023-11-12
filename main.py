@@ -1,7 +1,10 @@
 import pandas as pd
 import numpy as np
 import random
+import ridge_lasso as rl
 import imbalanced_dataset_regression as imb
+from sklearn.linear_model import Ridge, Lasso
+from sklearn.ensemble import RandomForestRegressor
 
 
 # Fit linear reg model
@@ -85,14 +88,26 @@ def lin_reg(data):
     print('Coefficient of Determination = ', CoD)
 
 
-# data = pd.read_csv('trainingset.csv')
+# load data and remove first column (Row Index)
+data = pd.read_csv('trainingset.csv').iloc[:, 1:]
 # lin_reg(data)
 
-reg = imb.Imbalanced_Dataset_Reg('trainingset.csv', 'ClaimAmount', 0.1, True)
-reg.no_resampling()
-reg.smoter()
-reg.gauss()
-reg.wercs()
-# reg.plot_overall()
+rl = rl.LinearModel(data)
+rl.ridge(0, 10)
+rl.lasso(0, 10)
+ridge_alpha = rl.get_ridge_alpha()
+lasso_alpha = rl.get_lasso_alpha()
 
+regression_model_default = RandomForestRegressor(n_estimators=50, max_features=0.5, n_jobs=-1,
+                                                 random_state=0)
+regression_model_ridge = Ridge(alpha=ridge_alpha)
+regression_model_lasso = Lasso(alpha=lasso_alpha)
 
+models = [regression_model_default, regression_model_ridge, regression_model_lasso]
+
+for model in models:
+    reg = imb.ImbalancedDatasetReg('trainingset.csv', 'ClaimAmount', 0.1, model)
+    reg.no_resampling()
+    reg.smoter()
+    reg.gauss()
+    reg.wercs()
