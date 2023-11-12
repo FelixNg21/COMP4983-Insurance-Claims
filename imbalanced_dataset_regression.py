@@ -59,17 +59,31 @@ class Imbalanced_Dataset_Reg:
             df = pd.DataFrame({'Actual': y_test, 'Predicted': y_pred})
             df.to_csv(f'{over}_{k}_output.csv')
         r2 = r2_score(y_test, y_pred)
+        mae = np.mean(np.abs(y_test - y_pred))
         rel_test = resreg.sigmoid_relevance(y_test, cl=None,
                                             ch=self.bins[0])  # relevance values of y_test
         rel_pred = resreg.sigmoid_relevance(y_pred, cl=None,
                                             ch=self.bins[0])  # relevance values of y_pred
         f1 = resreg.f1_score(y_test, y_pred, error_threshold=0.5, relevance_true=rel_test,
                              relevance_pred=rel_pred, relevance_threshold=0.5)
-        print("f1", f1)
         msebin = resreg.bin_performance(y_test, y_pred, bins=self.bins, metric='mse')
-        return r2, f1, msebin
+        return r2, f1, msebin, mae
 
-    def plotPerformance(self, msebin, msebinerr, f1, r2, title):
+    def plotPerformanceMAE(self, maebin, maebinerr, f1, r2, title):
+        plt.bar(range(2), maebin, yerr=maebinerr, width=0.4, capsize=3, color='royalblue',
+                linewidth=1, edgecolor='black')
+        plt.xlim(-0.5, len(self.bins) + 0.5)
+        plt.xticks(range(2), ['< {0}'.format(self.bins[0]), '≥ {0}'.format(self.bins[0])],
+                   **self.ticks_font)
+        plt.yticks(**self.ticks_font)
+        plt.ylabel('Mean Average Error (MAE)', self.label_font)
+        plt.xlabel('Target value range', self.label_font)
+        title = title + '\nf1={0}, r2={1}'.format(round(f1, 4), round(r2, 4))
+        plt.title(title, self.title_font)
+        plt.show()
+        plt.close()
+
+    def plotPerformanceMSE(self, msebin, msebinerr, f1, r2, title):
         plt.bar(range(2), msebin, yerr=msebinerr, width=0.4, capsize=3, color='royalblue',
                 linewidth=1, edgecolor='black')
         plt.xlim(-0.5, len(self.bins) + 0.5)
@@ -85,7 +99,7 @@ class Imbalanced_Dataset_Reg:
 
     def no_resampling(self):
         # Empty list for storing results
-        r2s, f1s, msebins = [], [], []
+        r2s, f1s, msebins, maebins = [], [], [], []
 
         # Fivefold cross validation
         kfold = KFold(n_splits=5, shuffle=True, random_state=0)
@@ -95,22 +109,23 @@ class Imbalanced_Dataset_Reg:
             X_test, y_test = self.X.iloc[test_index, :], self.y.iloc[test_index]
             reg = RandomForestRegressor(n_estimators=50, max_features=0.5, n_jobs=-1,
                                         random_state=0)
-            r2, f1, msebin = self.implementML(X_train, y_train, X_test, y_test,
+            r2, f1, msebin, mae = self.implementML(X_train, y_train, X_test, y_test,
                                               reg)  # Fit regressor and evaluate performance
             r2s.append(r2)
             f1s.append(f1)
             msebins.append(msebin)
+            maebins.append(mae)
 
         # Average performance
-        r2, f1, msebin = np.mean(r2s), np.mean(f1s), np.mean(msebins, axis=0)
+        r2, f1, msebin, maebin = np.mean(r2s), np.mean(f1s), np.mean(msebins, axis=0), np.mean(maebins)
         # Standard error of the mean
-        r2err, f1err, msebinerr = np.std(r2s) / np.sqrt(5), np.std(f1s) / np.sqrt(5), \
-                                  np.std(msebins, axis=0) / np.sqrt(5)
+        r2err, f1err, msebinerr, maebinerr = np.std(r2s) / np.sqrt(5), np.std(f1s) / np.sqrt(5), \
+                                  np.std(msebins, axis=0) / np.sqrt(5), np.std(maebins) / np.sqrt(5)
         # View performance
-        self.plotPerformance(msebin, msebinerr, f1, r2, title='No resampling (None)')
+        self.plotPerformanceMAE(maebin, maebinerr, f1, r2, title='No resampling (None)')
 
         # Save performance results
-        self.cache['None'] = [r2, f1, msebin, r2err, f1err, msebinerr]
+        self.cache['None'] = [r2, f1, msebin, r2err, f1err, msebinerr, maebin, maebinerr]
 
     def smoter(self):
         # Parameters
@@ -119,13 +134,13 @@ class Imbalanced_Dataset_Reg:
         params = list(itertools.product(overs, ks))
 
         # Empty lists for storing results
-        r2store, f1store, msebinstore = [], [], []
-        r2errstore, f1errstore, msebinerrstore = [], [], []
+        r2store, f1store, msebinstore, maestore = [], [], [], []
+        r2errstore, f1errstore, msebinerrstore, maebinerrstore = [], [], [], []
 
         # Grid search
         for over, k in params:
             kfold = KFold(n_splits=5, shuffle=True, random_state=0)
-            r2s, f1s, msebins = [], [], []
+            r2s, f1s, msebins, maebins = [], [], [], []
 
             # Fivefold cross validation
             for train_index, test_index in kfold.split(self.X):
@@ -141,34 +156,36 @@ class Imbalanced_Dataset_Reg:
                 # Fit regressor and evaluate performance
                 reg = RandomForestRegressor(n_estimators=50, max_features=0.5, n_jobs=-1,
                                             random_state=0)
-                r2, f1, msebin = self.implementML(X_train, y_train, X_test, y_test, reg, over, k)
+                r2, f1, msebin, mae = self.implementML(X_train, y_train, X_test, y_test, reg, over, k)
                 r2s.append(r2)
                 f1s.append(f1)
                 msebins.append(msebin)
-            r2, f1, msebin = np.mean(r2s), np.mean(f1), np.mean(msebins, axis=0)
-            r2err, f1err, msebinerr = np.std(r2s) / np.sqrt(5), np.std(f1s) / np.sqrt(5), \
-                                      np.std(msebins, axis=0) / np.sqrt(5)
+            r2, f1, msebin, maebin = np.mean(r2s), np.mean(f1s), np.mean(msebins, axis=0), np.mean(maebins)
+            r2err, f1err, msebinerr, maebinerr = np.std(r2s) / np.sqrt(5), np.std(f1s) / np.sqrt(5), \
+                                      np.std(msebins, axis=0) / np.sqrt(5), np.std(maebins) / np.sqrt(5)
 
             # Store grid search results
             r2store.append(r2)
             f1store.append(f1)
             msebinstore.append(msebin)
+            maestore.append(maebin)
             r2errstore.append(r2err)
             f1errstore.append(f1err)
             msebinerrstore.append(msebinerr)
+            maebinerrstore.append(maebinerr)
 
         # Determine the best parameters
-        best = np.argsort(f1store)[-1]  # Which is the best
+        best = np.argsort(maestore)[-1]  # Which is the best
         print('''Best parameters:
             over={0}; k={1}'''.format(params[best][0], params[best][1]))
-        f1, r2, msebin = f1store[best], r2store[best], msebinstore[best]
-        f1err, r2err, msebinerr = f1errstore[best], r2errstore[best], msebinerrstore[best]
+        f1, r2, msebin, maebin = f1store[best], r2store[best], msebinstore[best], maestore[best]
+        f1err, r2err, msebinerr, maebinerr = f1errstore[best], r2errstore[best], msebinerrstore[best], maebinerrstore[best]
 
         # Save results
-        self.cache['SMOTER'] = [r2, f1, msebin, r2err, f1err, msebinerr]
+        self.cache['SMOTER'] = [r2, f1, msebin, r2err, f1err, msebinerr, maebin, maebinerr]
 
         # Plot results
-        self.plotPerformance(msebin, msebinerr, f1, r2, title='SMOTER')
+        self.plotPerformanceMAE(maebin, maebinerr, f1, r2, title='SMOTER')
 
     def gauss(self):
 
@@ -178,13 +195,13 @@ class Imbalanced_Dataset_Reg:
         params = list(itertools.product(overs, deltas))
 
         # Empty lists for storing results
-        r2store, f1store, msebinstore = [], [], []
-        r2errstore, f1errstore, msebinerrstore = [], [], []
+        r2store, f1store, msebinstore, maebinstore = [], [], [], []
+        r2errstore, f1errstore, msebinerrstore, maebinerrstore = [], [], [], []
 
         # Grid search
         for over, delta in params:
             kfold = KFold(n_splits=5, shuffle=True, random_state=0)
-            r2s, f1s, msebins = [], [], []
+            r2s, f1s, msebins, maebins = [], [], [], []
 
             # Fivefold cross validation
             for train_index, test_index in kfold.split(self.X):
@@ -201,34 +218,37 @@ class Imbalanced_Dataset_Reg:
                 # Fit regressor and evaluate performance
                 reg = RandomForestRegressor(n_estimators=50, max_features=0.5, n_jobs=-1,
                                             random_state=0)
-                r2, f1, msebin = self.implementML(X_train, y_train, X_test, y_test, reg)
+                r2, f1, msebin, maebin = self.implementML(X_train, y_train, X_test, y_test, reg)
                 r2s.append(r2)
                 f1s.append(f1)
                 msebins.append(msebin)
-            r2, f1, msebin = np.mean(r2s), np.mean(f1s), np.mean(msebins, axis=0)
-            r2err, f1err, msebinerr = np.std(r2s) / np.sqrt(5), np.std(f1s) / np.sqrt(5), \
-                                      np.std(msebins, axis=0) / np.sqrt(5)
+                maebins.append(maebin)
+            r2, f1, msebin, maebin = np.mean(r2s), np.mean(f1s), np.mean(msebins, axis=0), np.mean(maebins)
+            r2err, f1err, msebinerr, maebinerr = np.std(r2s) / np.sqrt(5), np.std(f1s) / np.sqrt(5), \
+                                      np.std(msebins, axis=0) / np.sqrt(5), np.std(maebins) / np.sqrt(5)
 
             # Store grid search results
             r2store.append(r2)
             f1store.append(f1)
             msebinstore.append(msebin)
+            maebinstore.append(maebin)
             r2errstore.append(r2err)
             f1errstore.append(f1err)
             msebinerrstore.append(msebinerr)
+            maebinerrstore.append(maebinerr)
 
         # Determine the best parameters
-        best = np.argsort(f1store)[-1]  # Which is the best
+        best = np.argsort(maebinstore)[-1]  # Which is the best
         print('''Best parameters:
             over={0}; delta={1}'''.format(params[best][0], params[best][1]))
-        f1, r2, msebin = f1store[best], r2store[best], msebinstore[best]
-        f1err, r2err, msebinerr = f1errstore[best], r2errstore[best], msebinerrstore[best]
+        f1, r2, msebin, maebin = f1store[best], r2store[best], msebinstore[best], maebinstore[best]
+        f1err, r2err, msebinerr, maebinerr = f1errstore[best], r2errstore[best], msebinerrstore[best], maebinerrstore[best]
 
         # Save results
-        self.cache['GN'] = [r2, f1, msebin, r2err, f1err, msebinerr]
+        self.cache['GN'] = [r2, f1, msebin, r2err, f1err, msebinerr, maebin, maebinerr]
 
         # Plot results
-        self.plotPerformance(msebin, msebinerr, f1, r2, title='Gaussian noise (GN)')
+        self.plotPerformanceMAE(maebin, maebinerr, f1, r2, title='Gaussian noise (GN)')
 
     def wercs(self):
         # Parameters
@@ -240,8 +260,8 @@ class Imbalanced_Dataset_Reg:
                  list(itertools.product(overs, unders, [noises[0]], deltas))
 
         # Empty lists for storing results
-        r2store, f1store, msebinstore = [], [], []
-        r2errstore, f1errstore, msebinerrstore = [], [], []
+        r2store, f1store, msebinstore, maebinstore = [], [], [], []
+        r2errstore, f1errstore, msebinerrstore, maebinerrorstore = [], [], [], []
 
         # Grid search
         for param in params:
@@ -251,7 +271,7 @@ class Imbalanced_Dataset_Reg:
                 over, under, noise = param
                 delta = None
             kfold = KFold(n_splits=5, shuffle=True, random_state=0)
-            r2s, f1s, msebins = [], [], []
+            r2s, f1s, msebins, maebins = [], [], [], []
 
             # Fivefold cross validation
             for train_index, test_index in kfold.split(self.X):
@@ -267,24 +287,27 @@ class Imbalanced_Dataset_Reg:
                 # Fit regressor and evaluate performance
                 reg = RandomForestRegressor(n_estimators=50, max_features=0.5, n_jobs=-1,
                                             random_state=0)
-                r2, f1, msebin = self.implementML(X_train, y_train, X_test, y_test, reg)
+                r2, f1, msebin, maebin = self.implementML(X_train, y_train, X_test, y_test, reg)
                 r2s.append(r2)
                 f1s.append(f1)
                 msebins.append(msebin)
-            r2, f1, msebin = np.mean(r2s), np.mean(f1s), np.mean(msebins, axis=0)
-            r2err, f1err, msebinerr = np.std(r2s) / np.sqrt(5), np.std(f1s) / np.sqrt(5), \
-                                      np.std(msebins, axis=0) / np.sqrt(5)
+                maebins.append(maebin)
+            r2, f1, msebin, maebin = np.mean(r2s), np.mean(f1s), np.mean(msebins, axis=0), np.mean(maebins)
+            r2err, f1err, msebinerr, maebinerr = np.std(r2s) / np.sqrt(5), np.std(f1s) / np.sqrt(5), \
+                                      np.std(msebins, axis=0) / np.sqrt(5), np.std(maebins) / np.sqrt(5)
 
             # Store grid search results
             r2store.append(r2)
             f1store.append(f1)
             msebinstore.append(msebin)
+            maebinstore.append(maebin)
             r2errstore.append(r2err)
             f1errstore.append(f1err)
             msebinerrstore.append(msebinerr)
+            maebinerrorstore.append(maebinerr)
 
         # Determine the best parameters
-        best = np.argsort(f1store)[-1]  # Which is the best
+        best = np.argsort(maebinstore)[-1]  # Which is the best
         bestparam = params[best]
         if len(bestparam) == 4:
             over, under, noise, delta = bestparam
@@ -293,14 +316,14 @@ class Imbalanced_Dataset_Reg:
             delta = None
         print(f'''Best parameters:
             over={over}; under={under}; noise={noise}; delta={delta}''')
-        f1, r2, msebin = f1store[best], r2store[best], msebinstore[best]
-        f1err, r2err, msebinerr = f1errstore[best], r2errstore[best], msebinerrstore[best]
+        f1, r2, msebin, maebin = f1store[best], r2store[best], msebinstore[best], maebinstore[best]
+        f1err, r2err, msebinerr, maebinerr = f1errstore[best], r2errstore[best], msebinerrstore[best], maebinerrorstore[best]
 
         # Save results
-        self.cache['WERCS'] = [r2, f1, msebin, r2err, f1err, msebinerr]
+        self.cache['WERCS'] = [r2, f1, msebin, r2err, f1err, msebinerr, maebin, maebinerr]
 
         # Plot results
-        self.plotPerformance(msebin, msebinerr, f1, r2, title='WERCS')
+        self.plotPerformanceMAE(maebin, maebinerr, f1, r2, title='WERCS')
 
     def plot_overall(self):
         # Data from CACHE
@@ -310,6 +333,8 @@ class Imbalanced_Dataset_Reg:
         f1errs = [val[4] for val in self.cache.values()]
         msebins = np.asarray([val[2] for val in self.cache.values()])
         msebinerrs = np.asarray([val[5] for val in self.cache.values()])
+        maebins = np.asarray([val[6] for val in self.cache.values()])
+        maebinerrs = np.asarray([val[7] for val in self.cache.values()])
         keys = self.cache.keys()
 
         # # Plot r2
@@ -333,5 +358,11 @@ class Imbalanced_Dataset_Reg:
                 capsize=3, color='green', linewidth=1, edgecolor='black', label='y>3.5')
         _ = plt.xticks(range(len(keys)), keys, rotation=45)
         plt.ylabel('Mean squared error')
+
+        # Plot MAE
+        plt.bar(np.arange(len(keys)) - 0.2, maebins, width=0.4, yerr=maebinerrs,
+                capsize=3, color='goldenrod', linewidth=1, edgecolor='black', label='y<3.5')
+        _ = plt.xticks(range(len(keys)), keys, rotation=45)
+        plt.ylabel('Mean absolute error')
         plt.legend()
         plt.show()
