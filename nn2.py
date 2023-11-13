@@ -4,7 +4,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.utils import resample
 from tensorflow import keras
-from tensorflow.keras import layers
+from keras import layers
+# from tensorflow.keras import layers
 
 # Load the dataset
 data = pd.read_csv('trainingset.csv')
@@ -42,8 +43,7 @@ model = keras.Sequential([
 ])
 
 # Compile the model with a lower learning rate
-model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.001), loss='mean_squared_error')
-
+model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.001), loss='mean_squared_error', metrics=['mean_absolute_error'])
 # Train the model for binary classification
 model.fit(X_train_balanced, y_train_balanced, epochs=10, batch_size=32, validation_split=0.2)
 
@@ -52,7 +52,7 @@ model.save('trained_model.h5')
 
 # Evaluate the model on the test set
 test_loss = model.evaluate(X_test, y_test)
-print(f'Test loss (MSE): {test_loss}')
+print(f'Test loss (MSE, MAE): {test_loss}')
 
 # Use the model to predict whether ClaimAmount is greater than 0 for the entire dataset
 predictions_binary = model.predict(X)
