@@ -73,8 +73,8 @@ class Imbalanced_Dataset_Reg:
         plt.bar(range(2), maebin, yerr=maebinerr, width=0.4, capsize=3, color='royalblue',
                 linewidth=1, edgecolor='black')
         plt.xlim(-0.5, len(self.bins) + 0.5)
-        plt.xticks(range(2), ['< {0}'.format(self.bins[0]), '≥ {0}'.format(self.bins[0])],
-                   **self.ticks_font)
+        # plt.xticks(range(2), ['< {0}'.format(self.bins[0]), '≥ {0}'.format(self.bins[0])],
+        #            **self.ticks_font)
         plt.yticks(**self.ticks_font)
         plt.ylabel('Mean Average Error (MAE)', self.label_font)
         plt.xlabel('Target value range', self.label_font)

@@ -89,7 +89,7 @@ def lin_reg(data):
 # lin_reg(data)
 
 reg = imb.Imbalanced_Dataset_Reg('trainingset.csv', 'ClaimAmount', 0.1, True)
-reg.no_resampling()
+# reg.no_resampling()
 reg.smoter()
 # reg.gauss()
 # reg.wercs()
