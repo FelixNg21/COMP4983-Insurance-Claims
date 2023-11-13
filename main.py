@@ -92,6 +92,7 @@ def lin_reg(data):
 data = pd.read_csv('trainingset.csv').iloc[:, 1:]
 # lin_reg(data)
 
+# no resampling
 rl = rl.LinearModel(data)
 rl.ridge(0, 10)
 rl.lasso(0, 10)
@@ -104,10 +105,13 @@ regression_model_ridge = Ridge(alpha=ridge_alpha)
 regression_model_lasso = Lasso(alpha=lasso_alpha)
 
 models = [regression_model_default, regression_model_ridge, regression_model_lasso]
-
 for model in models:
     reg = imb.ImbalancedDatasetReg('trainingset.csv', 'ClaimAmount', 0.1, model)
     reg.no_resampling()
     reg.smoter()
     reg.gauss()
     reg.wercs()
+
+
+# with resampling
+
