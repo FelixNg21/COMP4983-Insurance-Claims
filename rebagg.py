@@ -27,34 +27,13 @@ x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 # print('MAE: %.3f (%.3f)' % (np.mean(np.abs(n_scores)), np.std(n_scores)))
 
 def get_models():
-    all_regs = []
-    estimators = all_estimators(type_filter='regressor')
-    for name, RegClass in estimators:
-        with contextlib.suppress(Exception):
-            if name != 'BaggingRegressor':
-                reg = RegClass()
-                all_regs.append((name, reg))
-    return all_regs
-
-
-# def get_models():
-#     n_trees = [10, 50, 100, 500, 1000, 5000]
-#     return {str(i): BaggingRegressor(n_estimators=i) for i in n_trees}
-# 1000 trees is good
-
-# def get_models():
-#     models = dict()
-#     for i in np.arange(1, 10, 1):
-#         key = '%.1f' % i
-#         models[key] = BaggingRegressor(max_samples=i)
-#     return models
-
-# def get_models(): # 1 neighbour is good
-#     models = {}
-#     for i in range(1, 2):
-#         base = KNeighborsRegressor(n_neighbors=i)
-#         models[str(i)] = BaggingRegressor(estimator=base, n_estimators=500)
-#     return models
+    return [
+        ('huber', HuberRegressor(max_iter=1000)),
+        ('ransac', RANSACRegressor()),
+        ('svr', SVR()),
+        ('nusvr', NuSVR()),
+        ('knn', KNeighborsRegressor()),
+    ]
 
 def evaluate_model(model, x, y):
     cv = RepeatedKFold(n_splits=10, n_repeats=3, random_state=1)
