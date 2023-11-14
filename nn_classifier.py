@@ -3,12 +3,12 @@ import numpy as np
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.preprocessing import StandardScaler
 from tensorflow import keras
-from tensorflow.keras import layers
+from keras import layers
 from scikeras.wrappers import KerasClassifier, KerasRegressor
 from imblearn.over_sampling import SMOTE
 
 def create_model(hp_config):
-    optimizer = hp_config.get('optimizer', 'adam')
+    optimizer = hp_config.get('optimizer', 'adam') # adam is the default optimizer
     activation = hp_config.get('activation', 'relu')
     dropout_rate = hp_config.get('dropout_rate', 0.5)
     layer_nodes = hp_config.get('layer_nodes', [128, 64, 32])  # List of nodes per layer
@@ -22,7 +22,7 @@ def create_model(hp_config):
         model.add(layers.Dropout(dropout_rate))
     model.add(layers.Dense(1, activation='linear'))  # Output layer
 
-    model.compile(optimizer=optimizer, loss='mean_squared_error', metrics=['accuracy'])
+    model.compile(optimizer=optimizer, loss='mean_squared_error', metrics=['accuracy', 'mean_average_error'])
     print(model.summary())
     return model
 
@@ -50,14 +50,10 @@ scaler = StandardScaler()
 X_train = scaler.fit_transform(X_train)
 X_test = scaler.transform(X_test)
 
-
-# Instantiate SMOTE
+# Instantiate SMOTE - can test with different number of neighbors
 smote = SMOTE(random_state=42)
 # Resample the dataset
 X_train_balanced, y_train_balanced = smote.fit_resample(X_train, y_train)
-
-
-
 
 hp_configs = [
     # {'optimizer': 'Adam', 'activation': 'relu', 'dropout_rate': 0.3, 'layer_nodes': [128, 64]},
@@ -97,16 +93,17 @@ for config in hp_configs:
     #     best_model = model
     #     break
 
-    # Evaluate the model using cross-validation
-    score = np.mean(cross_val_score(model, X_train_balanced, y_train_balanced, cv=3))
+    # Evaluate the model using cross-validation, used 3-fold cross-validation BUT this can be changed
+    score = np.mean(cross_val_score(model, X_train_balanced, y_train_balanced, cv=3, error_score='raise'))
 
     # Keep track of the best performing configuration
     if score > best_score:
         best_score = score
         best_config = config
-        # Rebuild and fit the best model
-        best_model = create_model(best_config)
-        best_model.fit(X_train_balanced, y_train_balanced, epochs=5, verbose=1)
+
+# Build and fit the best model (model with the lowest mae)  
+best_model = create_model(best_config)
+best_model.fit(X_train_balanced, y_train_balanced, epochs=5, verbose=1)
 
 # Print best configuration
 print("Best Configuration:", best_config)
