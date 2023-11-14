@@ -1,45 +1,53 @@
 import pandas as pd
 import numpy as np
 import random
-import matplotlib.pyplot as plt
-import resreg
-import itertools
-from sklearn.datasets import fetch_california_housing as dataset
-from sklearn.model_selection import KFold
-from sklearn.metrics import r2_score
+import ridge_lasso as rl
+from imbalanced_dataset_regression import ImbalancedDatasetReg as imb, Resampler
+from sklearn.linear_model import Ridge, Lasso
 from sklearn.ensemble import RandomForestRegressor
-import warnings
 
-warnings.filterwarnings('ignore')
-
-
-# Fit linear reg model
-# inputs:
-# X: training features
-# y: training outputs
-# outputs:
-# w: estimated weights of lin reg model
 def lin_reg_fit(X, y):
+    """
+    Fits a linear regression model to the given input features and target values.
+
+    Args:
+        X (numpy.ndarray): The input features of shape (n_samples, n_features).
+        y (numpy.ndarray): The target values of shape (n_samples,).
+
+    Returns:
+        numpy.ndarray: The weight vector of shape (n_features + 1,).
+    """
     # add a column of ones to X
     X = np.c_[np.ones((X.shape[0], 1)), X]
     # compute the pseudo-inverse of X
     X_pinv = np.linalg.pinv(X)
     return X_pinv.dot(y)
 
-
-# Predict using linear reg model
-# inputs:
-# X: test features
-# w: estimated weights of lin reg model
-# outputs:
-# y: predicted outputs
 def lin_reg_predict(X, w):
+    """
+    Predicts the output of a linear regression model.
+
+    Args:
+        X (numpy.ndarray): The input features of shape (n_samples, n_features).
+        w (numpy.ndarray): The weight vector of shape (n_features + 1,).
+
+    Returns:
+        numpy.ndarray: The predicted output of shape (n_samples,).
+    """
     # add a column of ones to X
     X = np.c_[np.ones((X.shape[0], 1)), X]
     return X.dot(w)
 
-
 def lin_reg(data):
+    """
+    Performs linear regression on the given dataset.
+
+    Args:
+        data (pandas.DataFrame): The input dataset containing the features and target variable.
+
+    Returns:
+        None
+    """
     # split the data into training set and test set
     train_ratio = 0.75
     # number of samples in the data_subset
@@ -74,7 +82,6 @@ def lin_reg(data):
 
     # train a linear regression model using training data
     weights = lin_reg_fit(train_features, train_labels)
-    print("Weights", weights)
     # predict new prices on test data
     price_pred = lin_reg_predict(test_features, weights)
 
@@ -94,153 +101,59 @@ def lin_reg(data):
     print('Coefficient of Determination = ', CoD)
 
 
-data = pd.read_csv('trainingset.csv')
+# load data and remove first column (Row Index)
+train_data = pd.read_csv('trainingset.csv').iloc[:, 1:]
+
+test_data = pd.read_csv('testset.csv')
+resampler = Resampler(train_data, 0.1)
+smoter_data_label, smoter_data_feature = resampler.smoter()
+gauss_data_label, gauss_data_feature = resampler.gauss()
+wercs_data_label, wercs_data_feature = resampler.wercs()
+
+smoter_data_combined = pd.concat([pd.DataFrame(smoter_data_label), pd.DataFrame(smoter_data_feature)], axis=1)
+smoter_data_combined.columns = [*smoter_data_combined.columns[:-1], 'ClaimAmount']
+gauss_data_combined = pd.concat([pd.DataFrame(gauss_data_label), pd.DataFrame(gauss_data_feature)], axis=1)
+gauss_data_combined.columns = [*gauss_data_combined.columns[:-1], 'ClaimAmount']
+wercs_data_combined = pd.concat([pd.DataFrame(wercs_data_label), pd.DataFrame(wercs_data_feature)], axis=1)
+wercs_data_combined.columns = [*wercs_data_combined.columns[:-1], 'ClaimAmount']
+
+resampled_data = [smoter_data_combined, gauss_data_combined, wercs_data_combined]
+for idx, data in enumerate(resampled_data):
+    rlm = rl.LinearModel(data)
+    rlm.ridge(0, 20)
+    rlm.lasso(0, 20)
+    ridge_model = Ridge(alpha=rlm.get_ridge_alpha())
+    lasso_model = Lasso(alpha=rlm.get_lasso_alpha())
+    models = [ridge_model, lasso_model]
+    for idx2, model in enumerate(models):
+        model.fit(data.iloc[:, :-1], data.iloc[:, -1])
+        predict = model.predict(test_data.iloc[:,1:])
+        pd.DataFrame(predict).to_csv(f'submission_resamp{idx}_model{idx2}.csv', index=False)
+
 # lin_reg(data)
 
+# # determine alpha values for ridge and lasso regression
+# rl = rl.LinearModel(data)
+# rl.ridge(0, 10)
+# rl.lasso(0, 10)
+# ridge_alpha = rl.get_ridge_alpha()
+# lasso_alpha = rl.get_lasso_alpha()
 
-# SMOTER
+# regression_model_default = RandomForestRegressor(n_estimators=50, max_features=0.5, n_jobs=-1,
+#                                                  random_state=0)
+# regression_model_ridge = Ridge(alpha=ridge_alpha)
+# regression_model_lasso = Lasso(alpha=lasso_alpha)
+#
+# models = [regression_model_default, regression_model_ridge, regression_model_lasso]
 
-
-# define what is a low and high claim
-bins = [0.1]
-
-CACHE = {}
-
-
-def implementML(X_train, y_train, X_test, y_test, reg, over=None, k=None):
-    reg.fit(X_train, y_train)  # fit regressor
-    y_pred = reg.predict(X_test)
-
-    if over is not None and k is not None:
-        df = pd.DataFrame({'Actual': y_test, 'Predicted': y_pred})
-        df.to_csv(f'{over}_{k}_output.csv')
-    r2 = r2_score(y_test, y_pred)
-    rel_test = resreg.sigmoid_relevance(y_test, cl=None, ch=bins[0])  # relevance values of y_test
-    rel_pred = resreg.sigmoid_relevance(y_pred, cl=None, ch=bins[0])  # relevance values of y_pred
-    f1 = resreg.f1_score(y_test, y_pred, error_threshold=0.5, relevance_true=rel_test,
-                         relevance_pred=rel_pred, relevance_threshold=0.5)
-    msebin = resreg.bin_performance(y_test, y_pred, bins=bins, metric='mse')
-    return r2, f1, msebin
+# determine best values for smoter/gauss/wercs resampling techniques
+# for model in models:
+#     reg = imb.ImbalancedDatasetReg('trainingset.csv', 'ClaimAmount', 0.1, model)
+#     reg.no_resampling()
+#     reg.smoter()
+#     reg.gauss()
+#     reg.wercs()
 
 
-ticks_font = {'size': '12'}
-label_font = {'size': '14'}
-title_font = {'size': '16'}
+# with resampling
 
-
-def plotPerformance(msebin, msebinerr, f1, r2, title):
-    plt.bar(range(2), msebin, yerr=msebinerr, width=0.4, capsize=3, color='royalblue',
-            linewidth=1, edgecolor='black')
-    plt.xlim(-0.5, len(bins) + 0.5)
-    plt.xticks(range(2), ['< {0}'.format(bins[0]), '≥ {0}'.format(bins[0])], **ticks_font)
-    plt.yticks(**ticks_font)
-    plt.ylabel('Mean Squared Error (MSE)', **label_font)
-    plt.xlabel('Target value range', **label_font)
-    title = title + '\nf1={0}, r2={1}'.format(round(f1, 3), round(r2, 3))
-    plt.title(title, **title_font)
-    plt.show()
-    plt.close()
-
-
-def no_resampling():
-    X = data.drop('ClaimAmount', axis='columns', inplace=False)
-    y = data.loc[:, 'ClaimAmount']
-    np.random.seed(seed=0)
-    sample = np.random.choice(range(len(y)), 500)
-    X, y = X.loc[sample, :], y[sample]
-    # Empty list for storing results
-    r2s, f1s, msebins = [], [], []
-
-    # Fivefold cross validation
-    kfold = KFold(n_splits=5, shuffle=True, random_state=0)
-
-    for train_index, test_index in kfold.split(X):
-        X_train, y_train = X.iloc[train_index, :], y.iloc[train_index]
-        X_test, y_test = X.iloc[test_index, :], y.iloc[test_index]
-        reg = RandomForestRegressor(n_estimators=50, max_features=0.5, n_jobs=-1, random_state=0)
-        r2, f1, msebin = implementML(X_train, y_train, X_test, y_test,
-                                     reg)  # Fit regressor and evaluate performance
-        r2s.append(r2);
-        f1s.append(f1);
-        msebins.append(msebin)
-
-    # Average performance
-    r2, f1, msebin = np.mean(r2s), np.mean(f1s), np.mean(msebins, axis=0)
-    # Standard error of the mean
-    r2err, f1err, msebinerr = np.std(r2s) / np.sqrt(5), np.std(f1s) / np.sqrt(5), \
-                              np.std(msebins, axis=0) / np.sqrt(5)
-    # View performance
-    plotPerformance(msebin, msebinerr, f1, r2, title='No resampling (None)')
-
-    # Save performance results
-    CACHE['None'] = [r2, f1, msebin, r2err, f1err, msebinerr]
-
-
-def smoter():
-    X = data.drop('ClaimAmount', axis='columns', inplace=False)
-    y = data.loc[:, 'ClaimAmount']
-    np.random.seed(seed=0)
-    sample = np.random.choice(range(len(y)), 500)
-    X, y = X.loc[sample, :], y[sample]
-
-    # Parameters
-    overs = ['balance', 'average', 'extreme']
-    ks = [5, 10, 15]  # nearest neighbors
-    params = list(itertools.product(overs, ks))
-
-    # Empty lists for storing results
-    r2store, f1store, msebinstore = [], [], []
-    r2errstore, f1errstore, msebinerrstore = [], [], []
-
-    # Grid search
-    for over, k in params:
-        kfold = KFold(n_splits=5, shuffle=True, random_state=0)
-        r2s, f1s, msebins = [], [], []
-
-        # Fivefold cross validation
-        for train_index, test_index in kfold.split(X):
-            X_train, y_train = X.iloc[train_index, :], y.iloc[train_index]
-            X_test, y_test = X.iloc[test_index, :], y.iloc[test_index]
-
-            # Resample training data (SMOTER)
-            relevance = resreg.sigmoid_relevance(y_train, cl=None, ch=bins[0])
-            X_train, y_train = resreg.smoter(X_train, y_train, relevance,
-                                             relevance_threshold=0.5, k=k, over=over,
-                                             random_state=0)
-
-            # Fit regressor and evaluate performance
-            reg = RandomForestRegressor(n_estimators=50, max_features=0.5, n_jobs=-1,
-                                        random_state=0)
-            r2, f1, msebin = implementML(X_train, y_train, X_test, y_test, reg, over, k)
-            r2s.append(r2)
-            f1s.append(f1)
-            msebins.append(msebin)
-        r2, f1, msebin = np.mean(r2s), np.mean(f1), np.mean(msebins, axis=0)
-        r2err, f1err, msebinerr = np.std(r2s) / np.sqrt(5), np.std(f1s) / np.sqrt(5), \
-                                  np.std(msebins, axis=0) / np.sqrt(5)
-
-        # Store grid search results
-        r2store.append(r2)
-        f1store.append(f1)
-        msebinstore.append(msebin)
-        r2errstore.append(r2err)
-        f1errstore.append(f1err)
-        msebinerrstore.append(msebinerr)
-
-    # Determine the best parameters
-    best = np.argsort(f1store)[-1]  # Which is the best
-    print('''Best parameters:
-        over={0}; k={1}'''.format(params[best][0], params[best][1]))
-    f1, r2, msebin = f1store[best], r2store[best], msebinstore[best]
-    f1err, rerr, msebinerr = f1errstore[best], r2errstore[best], msebinerrstore[best]
-
-    # Save results
-    CACHE['SMOTER'] = [r2, f1, msebin, r2err, f1err, msebinerr]
-
-    # Plot results
-    plotPerformance(msebin, msebinerr, f1, r2, title='SMOTER')
-
-
-no_resampling()
-smoter()
-print(CACHE)
