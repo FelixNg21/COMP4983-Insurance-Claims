@@ -2,38 +2,52 @@ import pandas as pd
 import numpy as np
 import random
 import ridge_lasso as rl
-import imbalanced_dataset_regression as imb
+from imbalanced_dataset_regression import ImbalancedDatasetReg as imb, Resampler
 from sklearn.linear_model import Ridge, Lasso
 from sklearn.ensemble import RandomForestRegressor
 
-
-# Fit linear reg model
-# inputs:
-# X: training features
-# y: training outputs
-# outputs:
-# w: estimated weights of lin reg model
 def lin_reg_fit(X, y):
+    """
+    Fits a linear regression model to the given input features and target values.
+
+    Args:
+        X (numpy.ndarray): The input features of shape (n_samples, n_features).
+        y (numpy.ndarray): The target values of shape (n_samples,).
+
+    Returns:
+        numpy.ndarray: The weight vector of shape (n_features + 1,).
+    """
     # add a column of ones to X
     X = np.c_[np.ones((X.shape[0], 1)), X]
     # compute the pseudo-inverse of X
     X_pinv = np.linalg.pinv(X)
     return X_pinv.dot(y)
 
-
-# Predict using linear reg model
-# inputs:
-# X: test features
-# w: estimated weights of lin reg model
-# outputs:
-# y: predicted outputs
 def lin_reg_predict(X, w):
+    """
+    Predicts the output of a linear regression model.
+
+    Args:
+        X (numpy.ndarray): The input features of shape (n_samples, n_features).
+        w (numpy.ndarray): The weight vector of shape (n_features + 1,).
+
+    Returns:
+        numpy.ndarray: The predicted output of shape (n_samples,).
+    """
     # add a column of ones to X
     X = np.c_[np.ones((X.shape[0], 1)), X]
     return X.dot(w)
 
-
 def lin_reg(data):
+    """
+    Performs linear regression on the given dataset.
+
+    Args:
+        data (pandas.DataFrame): The input dataset containing the features and target variable.
+
+    Returns:
+        None
+    """
     # split the data into training set and test set
     train_ratio = 0.75
     # number of samples in the data_subset
@@ -68,7 +82,6 @@ def lin_reg(data):
 
     # train a linear regression model using training data
     weights = lin_reg_fit(train_features, train_labels)
-    print("Weights", weights)
     # predict new prices on test data
     price_pred = lin_reg_predict(test_features, weights)
 
@@ -89,28 +102,57 @@ def lin_reg(data):
 
 
 # load data and remove first column (Row Index)
-data = pd.read_csv('trainingset.csv').iloc[:, 1:]
+train_data = pd.read_csv('trainingset.csv').iloc[:, 1:]
+
+test_data = pd.read_csv('testset.csv')
+resampler = Resampler(train_data, 0.1)
+smoter_data_label, smoter_data_feature = resampler.smoter()
+gauss_data_label, gauss_data_feature = resampler.gauss()
+wercs_data_label, wercs_data_feature = resampler.wercs()
+
+smoter_data_combined = pd.concat([pd.DataFrame(smoter_data_label), pd.DataFrame(smoter_data_feature)], axis=1)
+smoter_data_combined.columns = [*smoter_data_combined.columns[:-1], 'ClaimAmount']
+gauss_data_combined = pd.concat([pd.DataFrame(gauss_data_label), pd.DataFrame(gauss_data_feature)], axis=1)
+gauss_data_combined.columns = [*gauss_data_combined.columns[:-1], 'ClaimAmount']
+wercs_data_combined = pd.concat([pd.DataFrame(wercs_data_label), pd.DataFrame(wercs_data_feature)], axis=1)
+wercs_data_combined.columns = [*wercs_data_combined.columns[:-1], 'ClaimAmount']
+
+resampled_data = [smoter_data_combined, gauss_data_combined, wercs_data_combined]
+for idx, data in enumerate(resampled_data):
+    rlm = rl.LinearModel(data)
+    rlm.ridge(0, 20)
+    rlm.lasso(0, 20)
+    ridge_model = Ridge(alpha=rlm.get_ridge_alpha())
+    lasso_model = Lasso(alpha=rlm.get_lasso_alpha())
+    models = [ridge_model, lasso_model]
+    for idx2, model in enumerate(models):
+        model.fit(data.iloc[:, :-1], data.iloc[:, -1])
+        predict = model.predict(test_data.iloc[:,1:])
+        pd.DataFrame(predict).to_csv(f'submission_resamp{idx}_model{idx2}.csv', index=False)
+
 # lin_reg(data)
 
-# no resampling
-rl = rl.LinearModel(data)
-rl.ridge(0, 10)
-rl.lasso(0, 10)
-ridge_alpha = rl.get_ridge_alpha()
-lasso_alpha = rl.get_lasso_alpha()
+# # determine alpha values for ridge and lasso regression
+# rl = rl.LinearModel(data)
+# rl.ridge(0, 10)
+# rl.lasso(0, 10)
+# ridge_alpha = rl.get_ridge_alpha()
+# lasso_alpha = rl.get_lasso_alpha()
 
-regression_model_default = RandomForestRegressor(n_estimators=50, max_features=0.5, n_jobs=-1,
-                                                 random_state=0)
-regression_model_ridge = Ridge(alpha=ridge_alpha)
-regression_model_lasso = Lasso(alpha=lasso_alpha)
+# regression_model_default = RandomForestRegressor(n_estimators=50, max_features=0.5, n_jobs=-1,
+#                                                  random_state=0)
+# regression_model_ridge = Ridge(alpha=ridge_alpha)
+# regression_model_lasso = Lasso(alpha=lasso_alpha)
+#
+# models = [regression_model_default, regression_model_ridge, regression_model_lasso]
 
-models = [regression_model_default, regression_model_ridge, regression_model_lasso]
-for model in models:
-    reg = imb.ImbalancedDatasetReg('trainingset.csv', 'ClaimAmount', 0.1, model)
-    reg.no_resampling()
-    reg.smoter()
-    reg.gauss()
-    reg.wercs()
+# determine best values for smoter/gauss/wercs resampling techniques
+# for model in models:
+#     reg = imb.ImbalancedDatasetReg('trainingset.csv', 'ClaimAmount', 0.1, model)
+#     reg.no_resampling()
+#     reg.smoter()
+#     reg.gauss()
+#     reg.wercs()
 
 
 # with resampling

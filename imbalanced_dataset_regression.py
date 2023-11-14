@@ -308,3 +308,39 @@ class ImbalancedDatasetReg:
         # Save results
         self.cache['WERCS'] = [params[best], cv_err]
 
+class Resampler:
+    def __init__(self, data, bin):
+        self.data = data
+        self.bin = bin
+        self.smoter_overs = 'balance'
+        self.smoter_k = 1
+        self.gauss_overs = 'balance'
+        self.gauss_deltas = 0.1
+        self.wercs_overs = 0.5
+        self.wercs_unders = 0.5
+        self.wercs_noises = True
+        self.wercs_deltas = 0.01
+
+    def smoter(self):
+        x_train = self.data.iloc[:, :-1]
+        y_train = self.data.iloc[:, -1]
+        relevance = resreg.sigmoid_relevance(y_train, cl=None, ch=self.bin)
+        x_train_smoter, y_train_smoter = resreg.smoter(x_train, y_train, relevance, relevance_threshold=0.5,
+                                                       k=self.smoter_k, over=self.smoter_overs, random_state=0)
+        return x_train_smoter, y_train_smoter
+
+    def gauss(self):
+        x_train = self.data.iloc[:, :-1]
+        y_train = self.data.iloc[:, -1]
+        relevance = resreg.sigmoid_relevance(y_train, cl=None, ch=self.bin)
+        x_train, y_train = resreg.gaussian_noise(x_train, y_train, relevance, relevance_threshold=0.5,
+                                                 delta=self.gauss_deltas, over=self.gauss_overs, random_state=0)
+        return x_train, y_train
+
+    def wercs(self):
+        x_train= self.data.iloc[:, :-1]
+        y_train = self.data.iloc[:, -1]
+        relevance = resreg.sigmoid_relevance(y_train, cl=None, ch=self.bin)
+        x_train, y_train = resreg.wercs(x_train, y_train, relevance, over=self.wercs_overs, under=self.wercs_unders,
+                                        noise=self.wercs_noises, delta=self.wercs_deltas, random_state=0)
+        return x_train, y_train
