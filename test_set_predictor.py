@@ -32,7 +32,7 @@ binary_predictions_training = binary_model_training.predict(X_train)
 binary_predictions = binary_model.predict(X_test)
 
 
-test_set_prediction_thresholds = [0.6, 0.7, 0.8, 0.9]
+test_set_prediction_thresholds = [0.6, 0.7, 0.8, 0.9, 0.91]
 
 for idx, threshold in enumerate(test_set_prediction_thresholds):
 
@@ -88,7 +88,7 @@ for idx, threshold in enumerate(test_set_prediction_thresholds):
     if nonzero_predictions_training.size > 0:
         final_predictions_training.loc[row_indices_training[non_zero_indices_training]] = nonzero_predictions_training.flatten()
         mae = mean_absolute_error(final_predictions_training, data['ClaimAmount'])
-        print("Mae of training set: ", mae)
+        print("Threshold:", threshold, "Mae of training set: ", mae)
 
     # Create a DataFrame for saving to CSV
     predictions_df = pd.DataFrame({
