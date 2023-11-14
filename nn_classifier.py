@@ -22,7 +22,7 @@ def create_model(hp_config):
         model.add(layers.Dropout(dropout_rate))
     model.add(layers.Dense(1, activation='linear'))  # Output layer
 
-    model.compile(optimizer=optimizer, loss='mean_squared_error', metrics=['accuracy', 'mean_average_error'])
+    model.compile(optimizer=optimizer, loss='mean_squared_error', metrics=['accuracy', 'mae'])
     print(model.summary())
     return model
 

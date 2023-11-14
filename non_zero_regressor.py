@@ -1,4 +1,5 @@
 import pandas as pd
+from sklearn.metrics import mean_absolute_error
 from sklearn.model_selection import cross_val_score
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import Lasso, Ridge, HuberRegressor
@@ -19,6 +20,9 @@ def evaluate_model_with_cross_validation(model, X, y, n_splits=5):
 # Load and prepare the dataset
 data = pd.read_csv('trainingset.csv')
 non_zero_data = data[data['ClaimAmount'] > 0]
+
+#######
+# Check if we need to remove outliers!!!
 non_zero_data = non_zero_data[non_zero_data['ClaimAmount'] < 5000]
 X_non_zero = non_zero_data.iloc[:, 1:-1]
 y_non_zero = non_zero_data['ClaimAmount']
@@ -45,6 +49,7 @@ for model in models:
 
 # Identify the best model (lowest MAE)
 best_model_name = min(model_performance, key=lambda k: model_performance[k][1])
+print(best_model_name)
 best_model = [model for model in models if model.__class__.__name__ == best_model_name][0]
 
 # Fit the best model on the entire dataset
@@ -59,9 +64,11 @@ loaded_model = joblib.load('trained_model_nonzero.pkl')
 
 # Step 3: Perform a test prediction
 test_prediction = loaded_model.predict(X_non_zero)
+mae = mean_absolute_error(y_non_zero, test_prediction)
 
 # Display the test prediction
 print("Test Prediction:", test_prediction)
+print("MAE:", mae)
 
 # Step 4: Optionally compare model parameters or attributes
 # (This step depends on the kind of model you are using)
