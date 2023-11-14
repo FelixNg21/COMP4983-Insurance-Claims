@@ -35,7 +35,14 @@ def get_all_models():
 
 
 def get_models():
-    models = [RandomForestRegressor(n_estimators=100), GradientBoostingRegressor(n_estimators=100), LinearRegression()]
+    models_1 = [RandomForestRegressor(n_estimators=100), GradientBoostingRegressor(n_estimators=100),
+                LinearRegression(), KNeighborsRegressor()]
+    models_1 = [(type(model).__name__, model) for model in models_1]
+    models_2 = [GradientBoostingRegressor(n_estimators=100),
+                LinearRegression(), KNeighborsRegressor()]
+    models_2 = [(type(model).__name__, model) for model in models_2]
+    models_3 = [LinearRegression(), KNeighborsRegressor()]
+    models_3 = [(type(model).__name__, model) for model in models_3]
     return [
         # ('huber', BaggingRegressor(HuberRegressor(max_iter=1000), n_jobs=-1)),
         # ('bayersian_ridge', BaggingRegressor(BayesianRidge(), n_jobs=-1)),
@@ -54,7 +61,9 @@ def get_models():
         # ('poisson', BaggingRegressor(PoissonRegressor(), n_jobs=-1)),
         # ('ridge', BaggingRegressor(Ridge(), n_jobs=-1)),
         ('linear', BaggingRegressor(LinearRegression(), n_jobs=-1)),
-        ('voting', VotingRegressor(estimators=models, n_jobs=-1)),
+        ('voting', VotingRegressor(estimators=models_1, n_jobs=-1)),
+        ('voting2', VotingRegressor(estimators=models_2, n_jobs=-1)),
+        ('voting3', VotingRegressor(estimators=models_3, n_jobs=-1)),
         ('knn', BaggingRegressor(KNeighborsRegressor(), n_jobs=-1))
     ]
 
@@ -98,10 +107,10 @@ def get_predictions():
         try:
             trained_model = model.fit(x_train, y_train)
             predict = trained_model.predict(X_test_data)
-            row_indices.to_csv(f'1_4_{idx + 5}.csv', index=False)
-            csv = pd.read_csv(f'1_4_{idx + 5}.csv')
+            row_indices.to_csv(f'1_4_{idx + 6}.csv', index=False)
+            csv = pd.read_csv(f'1_4_{idx + 6}.csv')
             csv['ClaimAmount'] = predict
-            csv.to_csv(f'1_4_{idx + 5}.csv', index=False)
+            csv.to_csv(f'1_4_{idx + 6}.csv', index=False)
             predict_training = trained_model.predict(X)
             mae = np.mean(np.abs(predict_training - y))
             print(name, mae)

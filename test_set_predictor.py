@@ -32,7 +32,7 @@ binary_predictions_training = binary_model_training.predict(X_train)
 binary_predictions = binary_model.predict(X_test)
 
 
-test_set_prediction_thresholds = [0.6, 0.7, 0.8, 0.9, 0.91]
+test_set_prediction_thresholds = [0.6, 0.7, 0.8, 0.835, 0.9, 0.91]
 
 for idx, threshold in enumerate(test_set_prediction_thresholds):
 
