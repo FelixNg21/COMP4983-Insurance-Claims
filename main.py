@@ -118,8 +118,10 @@ wercs_data_combined = pd.concat([pd.DataFrame(wercs_data_label), pd.DataFrame(we
 wercs_data_combined.columns = [*wercs_data_combined.columns[:-1], 'ClaimAmount']
 
 resampled_data = [smoter_data_combined, gauss_data_combined, wercs_data_combined]
+
+
 for idx, data in enumerate(resampled_data):
-    rlm = rl.LinearModel(data)
+    rlm = rl.LinearModel(data, show_plot=False)
     rlm.ridge(0, 20)
     rlm.lasso(0, 20)
     ridge_model = Ridge(alpha=rlm.get_ridge_alpha())
@@ -127,10 +129,11 @@ for idx, data in enumerate(resampled_data):
     models = [ridge_model, lasso_model]
     for idx2, model in enumerate(models):
         model.fit(data.iloc[:, :-1], data.iloc[:, -1])
-        predict = model.predict(test_data.iloc[:,1:])
+        predict = model.predict(test_data.iloc[:, 1:])
+        mae = np.mean(np.abs(predict - test_data.iloc[:, -1]))
+        print(mae)
         pd.DataFrame(predict).to_csv(f'submission_resamp{idx}_model{idx2}.csv', index=False)
 
-# lin_reg(data)
 
 # # determine alpha values for ridge and lasso regression
 # rl = rl.LinearModel(data)
@@ -154,6 +157,4 @@ for idx, data in enumerate(resampled_data):
 #     reg.gauss()
 #     reg.wercs()
 
-
-# with resampling
 

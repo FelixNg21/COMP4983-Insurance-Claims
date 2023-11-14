@@ -32,7 +32,7 @@ class LinearModel:
         cv: Performs cross-validation for ridge or lasso regression.
 
     """
-    def __init__(self, data, ratio=0.30):
+    def __init__(self, data, ratio=0.30, show_plot=False):
         self.data_processed = None
         self.scalar = StandardScaler()
         self.data = data
@@ -41,6 +41,7 @@ class LinearModel:
         self.train_data, self.test_data = self.split_data()
         self.ridge_alpha = None
         self.lasso_alpha = None
+        self.show_plot = show_plot
 
     def preprocess(self):
         """
@@ -121,18 +122,19 @@ class LinearModel:
         lowest_lambda = lambda_values[cv_errors.index(min(cv_errors))]
         print("Lowest lambda value: ", lowest_lambda)
         result = lowest_lambda
-        plt.plot(lambda_values, cv_errors, label="cv error")
-        plt.plot(lambda_values, train_errors, label="train error")
-        plt.xscale("log")
-        plt.xlabel("lambda")
-        plt.ylabel("error")
-        plt.legend()
-        plt.show()
-        model = reg(alpha=lowest_lambda)
-        model.fit(self.train_data.iloc[:, :-1], self.train_data.iloc[:, -1])
-        test_pred = model.predict(self.test_data.iloc[:, :-1])
-        test_pred_cv_error = np.mean(np.abs(self.test_data.iloc[:, -1] - test_pred))
-        print("Test error: ", test_pred_cv_error)
+        if self.show_plot:
+            plt.plot(lambda_values, cv_errors, label="cv error")
+            plt.plot(lambda_values, train_errors, label="train error")
+            plt.xscale("log")
+            plt.xlabel("lambda")
+            plt.ylabel("error")
+            plt.legend()
+            plt.show()
+            model = reg(alpha=lowest_lambda)
+            model.fit(self.train_data.iloc[:, :-1], self.train_data.iloc[:, -1])
+            test_pred = model.predict(self.test_data.iloc[:, :-1])
+            test_pred_cv_error = np.mean(np.abs(self.test_data.iloc[:, -1] - test_pred))
+            print(test_pred_cv_error)
         return result
 
     def cv(self, x, y, k, alpha, reg):
