@@ -1,3 +1,24 @@
+SUBMISSIONS:
+using Sepehr's classification and different thresholds for classification
+
+| submission | threshold | mae    | f1     |
+| :---:      | :---:     | :---:  | :--:   |
+| 1          | > 0.6     | 258.55 | 0.25   |
+| 2          | > 0.7     | 212.28 | 0.27   |
+| 3          | > 0.8     | 164.68 | 0.27   |
+| 4          | > 0.835   | 139.29 | 0.24   |
+| 5          | > 0.9     | 107.95 | 0.024   |
+| 6          | > 0.91    | 107.75 | 0.005483 |
+
+using felix's rebagg:
+| submission | regressor   | mae    | f1     |
+| :---:      | :---:       | :---:  | :--:   |
+| 7          |             | 179.09 | 0.0916 |
+| 8          |             | 187.36 | 0.0916 |
+| 9          |             | 183.45 | 0.0916 |
+| 10         |             | 176.04 | 0.21   |
+
+
 There are a lot of labels with value 0 in the dataset. This is indicative of an imbalanced dataset.
 Upon performing linear regression on the data, we find an MAE of 204.
 
