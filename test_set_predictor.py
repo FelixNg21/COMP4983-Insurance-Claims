@@ -98,6 +98,5 @@ for idx, threshold in enumerate(test_set_prediction_thresholds):
 
     # Step 6: Save the predictions in a new CSV file
     # checkpointnumber_groupnumber_submissionnumber.csv
-    predictions_df.to_csv(f'1_4_{idx}.csv', index=False)
-
-    print(f"Predictions saved to '1_4_{idx}.csv'")
+    predictions_df.to_csv(f'1_4_{idx+1}.csv', index=False)
+    print(f"Predictions saved to '1_4_{idx+1}.csv'")

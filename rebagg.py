@@ -107,10 +107,10 @@ def get_predictions():
         try:
             trained_model = model.fit(x_train, y_train)
             predict = trained_model.predict(X_test_data)
-            row_indices.to_csv(f'1_4_{idx + 6}.csv', index=False)
-            csv = pd.read_csv(f'1_4_{idx + 6}.csv')
+            row_indices.to_csv(f'1_4_{idx + 7}.csv', index=False)
+            csv = pd.read_csv(f'1_4_{idx + 7}.csv')
             csv['ClaimAmount'] = predict
-            csv.to_csv(f'1_4_{idx + 6}.csv', index=False)
+            csv.to_csv(f'1_4_{idx + 7}.csv', index=False)
             predict_training = trained_model.predict(X)
             mae = np.mean(np.abs(predict_training - y))
             print(name, mae)
