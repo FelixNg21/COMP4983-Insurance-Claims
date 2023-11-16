@@ -11,7 +11,9 @@ using Sepehr's classification and different thresholds for classification
 | 6          | > 0.91    | 107.75 | 0.005483 |
 
 models_1 = RandomForestRegressor(n_estimators=100), GradientBoostingRegressor(n_estimators=100), LinearRegression(), KNeighborsRegressor()
+
 models_2 = GradientBoostingRegressor(n_estimators=100), LinearRegression(), KNeighborsRegressor()
+
 models_3 = LinearRegression(), KNeighborsRegressor()
 
 using felix's rebagg:
