@@ -10,13 +10,17 @@ using Sepehr's classification and different thresholds for classification
 | 5          | > 0.9     | 107.95 | 0.024   |
 | 6          | > 0.91    | 107.75 | 0.005483 |
 
+models_1 = RandomForestRegressor(n_estimators=100), GradientBoostingRegressor(n_estimators=100), LinearRegression(), KNeighborsRegressor()
+models_2 = GradientBoostingRegressor(n_estimators=100), LinearRegression(), KNeighborsRegressor()
+models_3 = LinearRegression(), KNeighborsRegressor()
+
 using felix's rebagg:
-| submission | regressor   | mae    | f1     |
-| :---:      | :---:       | :---:  | :--:   |
-| 7          |             | 179.09 | 0.0916 |
-| 8          |             | 187.36 | 0.0916 |
-| 9          |             | 183.45 | 0.0916 |
-| 10         |             | 176.04 | 0.21   |
+| submission | regressor                              | mae    | f1     |
+| :---:      | :---:                                  | :---:  | :--:   |
+| 7          | VotingRegressor(models_1)              | 179.09 | 0.0916 |
+| 8          | VotingRegressor(models_2)              | 187.36 | 0.0916 |
+| 9          | VotingRegressor(models_3               | 183.45 | 0.0916 |
+| 10         | BaggingRegressor(KNeighborsRegressor() | 176.04 | 0.21   |
 
 
 There are a lot of labels with value 0 in the dataset. This is indicative of an imbalanced dataset.
