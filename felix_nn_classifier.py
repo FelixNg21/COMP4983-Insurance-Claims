@@ -61,7 +61,7 @@ def find_best_hyperparameters():
         'optimizer': ['Adam'],
         'activation': ['relu'],
         'dropout_rate': [0.0, 0.1],
-        'layer_nodes': [[12, 8], [11, 3], [128, 128, 64]]
+        'layer_nodes': [[12, 8], [128, 128, 64]]
     }  # old layer nodes: [18, 17, 16], [18, 17, 15], [18, 17, 14], [18, 17, 13], [18, 17, 12], [18, 17, 11], [18, 17, 10], [18, 17, 9], [18, 17, 8], [18, 17, 7], [18, 17, 6], [18, 17, 5], [18, 17, 4], [18, 17, 3], [18, 17, 2], [18, 16, 15], [18, 16, 14], [18, 16, 13], [18, 16, 12], [18, 16, 11], [18, 16, 10], [18, 16, 9], [18, 16, 8], [18, 16, 7], [18, 16, 6], [18, 16, 5], [18, 16, 4], [18, 16, 3], [18, 16, 2],
     # old: [[12, 11], [12, 10], [12, 9], [12, 8], [12, 7], [12, 6], [12, 5],
     #                         [12, 4], [12, 3], [12, 2], [11, 10], [11, 10], [11, 9], [11, 8], [11, 7],
@@ -78,7 +78,7 @@ def find_best_hyperparameters():
     for params in product(*param_grid.values()):
         hyperparameters = dict(zip(param_grid.keys(), params))
         print(hyperparameters)
-        model = KerasClassifier(build_fn=create_model, epochs=3, verbose=1,
+        model = KerasClassifier(build_fn=create_model, epochs=5, verbose=1,
                                 callbacks=[early_stopping], **hyperparameters)
         score = np.mean(
             cross_val_score(model, X_train_balanced, y_train_balanced, cv=3, scoring='f1'))
