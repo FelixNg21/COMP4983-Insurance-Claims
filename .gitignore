@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+trained_model_nonzero.h5
+trained_regression_model.h5
+scatter_plot_matrix.png
+1_4_5.csv
+1_4_7.csv
+model_filename.pkl
+output_results.csv
