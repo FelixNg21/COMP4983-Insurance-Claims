@@ -9,6 +9,14 @@ from imblearn.over_sampling import SMOTE
 from itertools import product
 import numpy as np
 import warnings
+from sklearn.metrics import precision_score, recall_score, f1_score, accuracy_score
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.feature_selection import RFE
+
+
+# Set seeds for reproducibility
+np.random.seed(42)
+
 
 warnings.filterwarnings('ignore')
 
@@ -17,7 +25,7 @@ def create_model(optimizer='adam', activation='relu', dropout_rate=0.5, layer_no
     model = keras.Sequential()
     for i, nodes in enumerate(layer_nodes):
         if i == 0:
-            model.add(layers.Dense(nodes, activation=activation, input_dim=X_train.shape[1]))
+            model.add(layers.Dense(nodes, activation=activation, input_dim=X_train_balanced.shape[1]))
         else:
             model.add(layers.Dense(nodes, activation=activation))
         model.add(layers.Dropout(dropout_rate))
@@ -54,6 +62,26 @@ X_test = scaler.transform(X_test)
 smote = SMOTE(random_state=42)
 # Resample the dataset
 X_train_balanced, y_train_balanced = smote.fit_resample(X_train, y_train)
+
+# Feature Selection with RFE
+# rf_classifier_for_rfe = RandomForestClassifier(random_state=42)
+# rfe = RFE(estimator=rf_classifier_for_rfe, n_features_to_select=10, verbose=2)  # Adjust the number of features
+# X_train_balanced = rfe.fit_transform(X_train_balanced, y_train_balanced)
+# X_test = rfe.transform(X_test)
+
+# print(f"Number of features in X_train_balanced: {X_train_balanced.shape[1]}")
+# print("Feature Ranking: ", rfe.ranking_)
+# print("Features Selected: ", rfe.support_)
+
+# Feature ranking array
+feature_ranking = [1, 1, 1, 6, 7, 2, 1, 1, 9, 1, 3, 1, 5, 8, 1, 1, 1, 4]
+
+# Select indices of important features (ranking of 1)
+important_features_indices = [i for i, rank in enumerate(feature_ranking) if rank < 7]
+
+# Select important features from datasets
+X_train_balanced = X_train_balanced[:, important_features_indices]
+X_test = X_test[:, important_features_indices]
 
 
 def find_best_hyperparameters():
@@ -95,20 +123,49 @@ def use_best_params(best_params):
     print("Best hyperparameters:", best_params)
     best_model.fit(X_train_balanced, y_train_balanced, epochs=20, verbose=1)
 
-    # Evaluate the best model on the test set
-    test_loss, test_accuracy, test_binary_accuracy = best_model.evaluate(X_test, y_test)
-    print(
-        f'Test Loss (Binary Crossentropy): {test_loss}, Test Accuracy: {test_accuracy}, Test Binary Accuracy: {test_binary_accuracy}')
+    # Predictions for evaluation
+    y_pred_train = best_model.predict(X_train_balanced)
+    y_pred_test = best_model.predict(X_test)
+
+    # Evaluation metrics for training set
+    train_accuracy = accuracy_score(y_train_balanced, y_pred_train.round())
+    train_precision = precision_score(y_train_balanced, y_pred_train.round())
+    train_recall = recall_score(y_train_balanced, y_pred_train.round())
+    train_f1 = f1_score(y_train_balanced, y_pred_train.round())
+
+    print(f"Training Metrics: Accuracy: {train_accuracy}, Precision: {train_precision}, Recall: {train_recall}, F1 Score: {train_f1}")
+
+    # Evaluation metrics for test set
+    test_accuracy = accuracy_score(y_test, y_pred_test.round())
+    test_precision = precision_score(y_test, y_pred_test.round())
+    test_recall = recall_score(y_test, y_pred_test.round())
+    test_f1 = f1_score(y_test, y_pred_test.round())
+
+    print(f"Test Metrics: Accuracy: {test_accuracy}, Precision: {test_precision}, Recall: {test_recall}, F1 Score: {test_f1}")
+
+    # Combine training and test data
+    X_full = np.concatenate((X_train_balanced, X_test), axis=0)
+    y_full = np.concatenate((y_train_balanced, y_test), axis=0)
+
+    # Train the model on the full dataset
+    best_model.fit(X_full, y_full, epochs=20, verbose=1)
 
     # Save the best model
     best_model.save('felix_node_permutation_trained_model.h5')
 
 
-best_params = find_best_hyperparameters()
+# best_params = find_best_hyperparameters()
 # best_params =  {'optimizer': 'Adam', 'activation': 'relu', 'dropout_rate': 0.0, 'layer_nodes': [128, 128, 64]} #Test Loss (Binary Crossentropy): 0.3443473279476166, Test Accuracy: 0.9223571419715881, Test Binary Accuracy: 0.9223571419715881
 # best_params={'optimizer': 'Adam', 'activation': 'relu', 'dropout_rate': 0.0, 'layer_nodes': [128, 128, 64, 32]} #Loss (Binary Crossentropy): 0.40981221199035645, Test Accuracy: 0.9097142815589905, Test Binary Accuracy: 0.9097142815589905
 # best_params = {'optimizer': 'Adam', 'activation': 'relu', 'dropout_rate': 0.0, 'layer_nodes': [128, 128, 64, 64]} #Test Loss (Binary Crossentropy): 0.4488109052181244, Test Accuracy: 0.920285701751709, Test Binary Accuracy: 0.920285701751709
 # Best hyperparameters: {'optimizer': 'Adam', 'activation': 'relu', 'dropout_rate': 0.0, 'layer_nodes': [11, 3]} # Test Loss (Binary Crossentropy): 0.7031096816062927, Test Accuracy: 0.607785701751709, Test Binary Accuracy: 0.607785701751709
+best_params = {
+        'optimizer': 'Adam',
+        'activation': 'relu',
+        'dropout_rate': 0.0,
+        'layer_nodes':  [128, 128, 64]
+    }
+
 use_best_params(best_params)
 
 # the first run of this code experimented with different optimizers, activation functions, and dropout rates along with number of nodes and layers
