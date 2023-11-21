@@ -1,9 +1,16 @@
 import pandas as pd
 import joblib
-from sklearn.metrics import mean_absolute_error
+from sklearn.metrics import mean_absolute_error, f1_score
 from tensorflow import keras
 from sklearn.preprocessing import StandardScaler
 import numpy as np
+import warnings
+
+# Suppress scikit-learn warnings
+warnings.filterwarnings("ignore", category=FutureWarning)
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 # Step 1: Load the test set
 test_set = pd.read_csv('testset.csv')
@@ -24,15 +31,27 @@ X_test = scaler.transform(X_test)
 
 
 # Step 2: Load the binary Keras model
-binary_model = keras.models.load_model('trained_model.h5')
-binary_model_training = keras.models.load_model('trained_model.h5')
+binary_model = keras.models.load_model('felix_node_permutation_trained_model.h5')
+binary_model_training = keras.models.load_model('felix_node_permutation_trained_model.h5')
 
 # Step 3: Perform classification on the test set
 binary_predictions_training = binary_model_training.predict(X_train)
 binary_predictions = binary_model.predict(X_test)
 
+# Initialize final_predictions_training outside the loop
+final_predictions_training = pd.Series([0] * len(binary_predictions_training), index=row_indices_training)
 
-test_set_prediction_thresholds = [0.6, 0.7, 0.8, 0.835, 0.9, 0.91]
+# Create binary labels for classification (0 or 1)
+binary_labels_training = (data['ClaimAmount'] != 0).astype(int)
+binary_labels_test = (final_predictions_training != 0).astype(int)
+
+# test_set_prediction_thresholds = [0.6, 0.7, 0.72, 0.74, 0.76, 0.78, 0.79, 0.8, 0.81, 0.82, 0.8, 0.9]
+# test_set_prediction_thresholds = [0.72, 0.74, 0.76, 0.78, 0.79, 0.8, 0.81, 0.82, 0.84, 0.86, 0.88, 0.9, 0.92, 0.94, 0.96, 0.98, 0.99]
+
+#thresholds from 0.7 to 0.99 in 0.01 increments:
+test_set_prediction_thresholds = np.arange(0.7, 0.99, 0.01).tolist()
+print(test_set_prediction_thresholds)
+
 
 for idx, threshold in enumerate(test_set_prediction_thresholds):
 
@@ -90,6 +109,10 @@ for idx, threshold in enumerate(test_set_prediction_thresholds):
         mae = mean_absolute_error(final_predictions_training, data['ClaimAmount'])
         print("Threshold:", threshold, "Mae of training set: ", mae)
 
+        f1 = f1_score(binary_labels_training, binary_classes_training, average='binary')
+        print("Threshold:", threshold, "F1 Score of training set: ", f1)
+
+
     # Create a DataFrame for saving to CSV
     predictions_df = pd.DataFrame({
         'rowIndex': final_predictions.index,
@@ -100,3 +123,4 @@ for idx, threshold in enumerate(test_set_prediction_thresholds):
     # checkpointnumber_groupnumber_submissionnumber.csv
     predictions_df.to_csv(f'1_4_{idx+1}.csv', index=False)
     print(f"Predictions saved to '1_4_{idx+1}.csv'")
+    print(" ")
