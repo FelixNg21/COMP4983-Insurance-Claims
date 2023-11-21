@@ -29,18 +29,6 @@ X_test = scaler.transform(X_test)
 smote = SMOTE(random_state=42)
 X_train_balanced, y_train_balanced = smote.fit_resample(X_train, y_train)
 
-# Instantiate the Decision Tree Classifier
-decision_tree = DecisionTreeClassifier(random_state=42)
-
-# Train the Decision Tree Model
-decision_tree.fit(X_train_balanced, y_train_balanced)
-
-# Evaluate the Model
-train_accuracy = decision_tree.score(X_train_balanced, y_train_balanced)
-test_accuracy = decision_tree.score(X_test, y_test)
-print(f"Training Accuracy: {train_accuracy}")
-print(f"Test Accuracy: {test_accuracy}")
-
 # Hyperparameter Tuning
 # Define the parameter grid for the decision tree
 param_grid = {

@@ -1,16 +1,17 @@
 import pandas as pd
-from sklearn.model_selection import train_test_split, GridSearchCV, cross_val_score
+from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
 from imblearn.over_sampling import SMOTE
+from sklearn.feature_selection import RFE
+from sklearn.decomposition import PCA
 import numpy as np
 import warnings
 from sklearn.metrics import accuracy_score, f1_score
 from joblib import dump
 warnings.filterwarnings('ignore')
-
 
 # Load the dataset
 data = pd.read_csv('trainingset.csv')
@@ -30,25 +31,24 @@ X_test = scaler.transform(X_test)
 
 # Instantiate SMOTE
 smote = SMOTE(random_state=42)
-X_train_balanced, y_train_balanced = smote.fit_resample(X_train, y_train)
+X_train, y_train = smote.fit_resample(X_train, y_train)
 
-# 1. Instantiate the Random Forest Classifier
-rf_classifier = RandomForestClassifier(random_state=42)
+# Feature Selection with RFE
+rf_classifier_for_rfe = RandomForestClassifier(random_state=42)
+rfe = RFE(estimator=rf_classifier_for_rfe, n_features_to_select=10, verbose=2)  # Adjust the number of features
+X_train = rfe.fit_transform(X_train, y_train)
+X_test = rfe.transform(X_test)
 
-# 2. Train the Classifier
-rf_classifier.fit(X_train_balanced, y_train_balanced)
-
-# 3. Evaluate the Model
-train_accuracy = rf_classifier.score(X_train_balanced, y_train_balanced)
-test_accuracy = rf_classifier.score(X_test, y_test)
-print(f"Training Accuracy: {train_accuracy}")
-print(f"Test Accuracy: {test_accuracy}")
+# Dimensionality Reduction with PCA
+pca = PCA(n_components=0.95)  # Adjust the number of components
+X_train = pca.fit_transform(X_train)
+X_test = pca.transform(X_test)
 
 # 4. Hyperparameter Tuning
 # Define the parameter grid
 param_grid = {
     'n_estimators': [100, 200, 300],
-    'max_depth': [None],
+    'max_depth': [None, 15, 30],
     'min_samples_split': [2, 5, 10],
     'min_samples_leaf': [1, 2, 4]
 }
@@ -62,7 +62,7 @@ grid_search = GridSearchCV(estimator=RandomForestClassifier(random_state=42),
                            n_jobs=-1)
 
 # Fit GridSearchCV
-grid_search.fit(X_train_balanced, y_train_balanced)
+grid_search.fit(X_train, y_train)
 
 # Find the best parameters
 best_params = grid_search.best_params_
@@ -77,9 +77,9 @@ print(f"Test Accuracy of Best Model: {test_accuracy}")
 best_rf = grid_search.best_estimator_
 
 # Predictions on training set
-y_train_pred = best_rf.predict(X_train_balanced)
-train_accuracy = accuracy_score(y_train_balanced, y_train_pred)
-train_f1 = f1_score(y_train_balanced, y_train_pred)
+y_train_pred = best_rf.predict(X_train)
+train_accuracy = accuracy_score(y_train, y_train_pred)
+train_f1 = f1_score(y_train, y_train_pred)
 
 # Predictions on test set
 y_test_pred = best_rf.predict(X_test)
@@ -96,11 +96,11 @@ print(f"Test Set F1 Score: {test_f1}")
 # X_train_balanced_df = pd.DataFrame(X_train_balanced, columns=X_test.columns)
 
 # Combine the training and test sets
-X_full = np.concatenate([X_train_balanced, X_test])
-y_full = pd.concat([y_train_balanced, y_test])
+X_full = np.concatenate([X_train, X_test])
+y_full = pd.concat([y_train, y_test])
 
 # Train the best model on the entire dataset
 best_rf.fit(X_full, y_full)
 
 # Save the retrained model
-dump(best_rf, 'random_forest_model.joblib')
+dump(best_rf, 'reduced_feature_random_forest_model.joblib')
