@@ -17,6 +17,7 @@ models_2 = GradientBoostingRegressor(n_estimators=100), LinearRegression(), KNei
 models_3 = LinearRegression(), KNeighborsRegressor()
 
 using felix's rebagg:
+
 | submission | regressor                              | mae    | f1     | submitted MAE's
 | :---:      | :---:                                  | :---:  | :--:   | :--:
 | 7          | VotingRegressor(models_1)              | 179.09 | 0.0916 | 152.2087
@@ -24,6 +25,16 @@ using felix's rebagg:
 | 9          | VotingRegressor(models_3               | 183.45 | 0.0916 | 162.6934
 | 10         | BaggingRegressor(KNeighborsRegressor() | 176.04 | 0.21   | 141.6154
 
+Submission 2:
+
+| submission |               regressor                | classifier |  mae   |   f1   | submitted MAE's
+| :---:      |:--------------------------------------:|:----------:|:------:|:------:| :--:
+|1 | sepehr_random_forest_nonzero_regressor | felix_cnn  |148.5252|0.395722|116.11694249336313
+|2 | sepehr_random_forest_nonzero_regressor | felix_cnn  |    143.5130    |    0.394263    |111.90586037226072
+|3 |      felix_randomforestregressor       | felix_cnn  |    137.3244   |   0.392771  |107.65001542336874
+
+|4 |      felix_randomforestregressor       | felix_cnn  |    159.6154   |   0.395722 |134.14282078104668
+|5 |      felix_randomforestregressor       | felix_cnn  |    137.3244   |   0.392771  |107.65001542336874
 
 There are a lot of labels with value 0 in the dataset. This is indicative of an imbalanced dataset.
 Upon performing linear regression on the data, we find an MAE of 204.
