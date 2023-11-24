@@ -1,14 +1,14 @@
 SUBMISSIONS:
 using Sepehr's classification and different thresholds for classification
 
-| submission | threshold | mae    | f1     |
-| :---:      | :---:     | :---:  | :--:   |
-| 1          | > 0.6     | 258.55 | 0.25   |
-| 2          | > 0.7     | 212.28 | 0.27   |
-| 3          | > 0.8     | 164.68 | 0.27   |
-| 4          | > 0.835   | 139.29 | 0.24   |
-| 5          | > 0.9     | 107.95 | 0.024   |
-| 6          | > 0.91    | 107.75 | 0.005483 |
+| submission | threshold | mae    | f1       | submitted MAE's
+| :---:      | :---:     | :---:  | :--:     | :--:
+| 1          | > 0.6     | 258.55 | 0.25     | 223.4564
+| 2          | > 0.7     | 212.28 | 0.27     | 180.2477
+| 3          | > 0.8     | 164.68 | 0.27     | 139.0752
+| 4          | > 0.835   | 139.29 | 0.24     | 119.1181
+| 5          | > 0.9     | 107.95 | 0.024    | 102.4828
+| 6          | > 0.91    | 107.75 | 0.005483 | 102.7698
 
 models_1 = RandomForestRegressor(n_estimators=100), GradientBoostingRegressor(n_estimators=100), LinearRegression(), KNeighborsRegressor()
 
@@ -17,13 +17,24 @@ models_2 = GradientBoostingRegressor(n_estimators=100), LinearRegression(), KNei
 models_3 = LinearRegression(), KNeighborsRegressor()
 
 using felix's rebagg:
-| submission | regressor                              | mae    | f1     |
-| :---:      | :---:                                  | :---:  | :--:   |
-| 7          | VotingRegressor(models_1)              | 179.09 | 0.0916 |
-| 8          | VotingRegressor(models_2)              | 187.36 | 0.0916 |
-| 9          | VotingRegressor(models_3               | 183.45 | 0.0916 |
-| 10         | BaggingRegressor(KNeighborsRegressor() | 176.04 | 0.21   |
 
+| submission | regressor                              | mae    | f1     | submitted MAE's
+| :---:      | :---:                                  | :---:  | :--:   | :--:
+| 7          | VotingRegressor(models_1)              | 179.09 | 0.0916 | 152.2087
+| 8          | VotingRegressor(models_2)              | 187.36 | 0.0916 | 171.6480
+| 9          | VotingRegressor(models_3               | 183.45 | 0.0916 | 162.6934
+| 10         | BaggingRegressor(KNeighborsRegressor() | 176.04 | 0.21   | 141.6154
+
+Submission 2:
+
+| submission |               regressor                | classifier |  mae   |   f1   | submitted MAE's
+| :---:      |:--------------------------------------:|:----------:|:------:|:------:| :--:
+|1 | sepehr_random_forest_nonzero_regressor | felix_cnn  |148.5252|0.395722|116.11694249336313
+|2 | sepehr_random_forest_nonzero_regressor | felix_cnn  |    143.5130    |    0.394263    |111.90586037226072
+|3 |      felix_randomforestregressor       | felix_cnn  |    137.3244   |   0.392771  |107.65001542336874
+
+|4 |      felix_randomforestregressor       | felix_cnn  |    159.6154   |   0.395722 |134.14282078104668
+|5 |      felix_randomforestregressor       | felix_cnn  |    137.3244   |   0.392771  |107.65001542336874
 
 There are a lot of labels with value 0 in the dataset. This is indicative of an imbalanced dataset.
 Upon performing linear regression on the data, we find an MAE of 204.
