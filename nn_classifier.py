@@ -22,7 +22,7 @@ def create_model(hp_config):
         model.add(layers.Dropout(dropout_rate))
     model.add(layers.Dense(1, activation='linear'))  # Output layer
 
-    model.compile(optimizer=optimizer, loss='mean_squared_error', metrics=['accuracy', 'mae'])
+    model.compile(optimizer=optimizer, loss='mean_squared_error', metrics=['accuracy', 'mae', 'binary_accuracy'])
     print(model.summary())
     return model
 
@@ -56,26 +56,26 @@ smote = SMOTE(random_state=42)
 X_train_balanced, y_train_balanced = smote.fit_resample(X_train, y_train)
 
 hp_configs = [
-    # {'optimizer': 'Adam', 'activation': 'relu', 'dropout_rate': 0.3, 'layer_nodes': [128, 64]},
-    # {'optimizer': 'Adam', 'activation': 'relu', 'dropout_rate': 0.4, 'layer_nodes': [128, 64, 32]},
-    # {'optimizer': 'SGD', 'activation': 'relu', 'dropout_rate': 0.3, 'layer_nodes': [64, 64]},
-    # {'optimizer': 'SGD', 'activation': 'relu', 'dropout_rate': 0.4, 'layer_nodes': [64, 32, 16]},
-    # {'optimizer': 'RMSprop', 'activation': 'relu', 'dropout_rate': 0.2, 'layer_nodes': [128, 128]},
-    # {'optimizer': 'RMSprop', 'activation': 'tanh', 'dropout_rate': 0.5, 'layer_nodes': [100, 50, 25]},
-    # {'optimizer': 'Adam', 'activation': 'sigmoid', 'dropout_rate': 0.3, 'layer_nodes': [128, 128, 64]},
-    # {'optimizer': 'SGD', 'activation': 'sigmoid', 'dropout_rate': 0.4, 'layer_nodes': [64, 64, 32]},
+    {'optimizer': 'Adam', 'activation': 'relu', 'dropout_rate': 0.3, 'layer_nodes': [128, 64]},
+    {'optimizer': 'Adam', 'activation': 'relu', 'dropout_rate': 0.4, 'layer_nodes': [128, 64, 32]},
+    {'optimizer': 'SGD', 'activation': 'relu', 'dropout_rate': 0.3, 'layer_nodes': [64, 64]},
+    {'optimizer': 'SGD', 'activation': 'relu', 'dropout_rate': 0.4, 'layer_nodes': [64, 32, 16]},
+    {'optimizer': 'RMSprop', 'activation': 'relu', 'dropout_rate': 0.2, 'layer_nodes': [128, 128]},
+    {'optimizer': 'RMSprop', 'activation': 'tanh', 'dropout_rate': 0.5, 'layer_nodes': [100, 50, 25]},
+    {'optimizer': 'Adam', 'activation': 'sigmoid', 'dropout_rate': 0.3, 'layer_nodes': [128, 128, 64]},
+    {'optimizer': 'SGD', 'activation': 'sigmoid', 'dropout_rate': 0.4, 'layer_nodes': [64, 64, 32]},
     {'optimizer': 'SGD', 'activation': 'relu', 'dropout_rate': 0.5, 'layer_nodes': [128, 128, 64, 32]},
     {'optimizer': 'Adam', 'activation': 'relu', 'dropout_rate': 0.5, 'layer_nodes': [128, 128, 64, 32]},
     {'optimizer': 'RMSprop', 'activation': 'relu', 'dropout_rate': 0.5, 'layer_nodes': [128, 128, 64, 32]},
     {'optimizer': 'SGD', 'activation': 'relu', 'dropout_rate': 0.25, 'layer_nodes': [128, 128, 64, 32]},
     {'optimizer': 'Adam', 'activation': 'relu', 'dropout_rate': 0.25, 'layer_nodes': [128, 128, 64, 32]},
     {'optimizer': 'RMSprop', 'activation': 'relu', 'dropout_rate': 0.25, 'layer_nodes': [128, 128, 64, 32]},
-    # {'optimizer': 'SGD', 'activation': 'relu', 'dropout_rate': 0.5, 'layer_nodes': [128,  64]},
-    # {'optimizer': 'Adam', 'activation': 'relu', 'dropout_rate': 0.5, 'layer_nodes': [128,  64]},
-    # {'optimizer': 'RMSprop', 'activation': 'relu', 'dropout_rate': 0.5, 'layer_nodes': [128,  64]},
-    # {'optimizer': 'SGD', 'activation': 'relu', 'dropout_rate': 0.25, 'layer_nodes': [128,  64]},
-    # {'optimizer': 'Adam', 'activation': 'relu', 'dropout_rate': 0.25, 'layer_nodes': [128,  64]},
-    # {'optimizer': 'RMSprop', 'activation': 'relu', 'dropout_rate': 0.25, 'layer_nodes': [128,  64]},
+    {'optimizer': 'SGD', 'activation': 'relu', 'dropout_rate': 0.5, 'layer_nodes': [128,  64]},
+    {'optimizer': 'Adam', 'activation': 'relu', 'dropout_rate': 0.5, 'layer_nodes': [128,  64]},
+    {'optimizer': 'RMSprop', 'activation': 'relu', 'dropout_rate': 0.5, 'layer_nodes': [128,  64]},
+    {'optimizer': 'SGD', 'activation': 'relu', 'dropout_rate': 0.25, 'layer_nodes': [128,  64]},
+    {'optimizer': 'Adam', 'activation': 'relu', 'dropout_rate': 0.25, 'layer_nodes': [128,  64]},
+    {'optimizer': 'RMSprop', 'activation': 'relu', 'dropout_rate': 0.25, 'layer_nodes': [128,  64]},
     # Add more configurations as desired
 ]
 
@@ -109,8 +109,8 @@ best_model.fit(X_train_balanced, y_train_balanced, epochs=5, verbose=1)
 print("Best Configuration:", best_config)
 
 # Evaluate the best model on the test set
-test_loss, test_accuracy = best_model.evaluate(X_test, y_test)
-print(f'Test Loss (MSE): {test_loss}, Test Accuracy: {test_accuracy}')
+test_loss, test_accuracy, test_f1 = best_model.evaluate(X_test, y_test)
+print(f'Test Loss (MSE): {test_loss}, Test Accuracy: {test_accuracy}, Test F1: {test_f1}')
 
 # train the model on the entire dataset
 X = np.array(X)
@@ -128,5 +128,5 @@ X_balanced, y_balanced = smote.fit_resample(X, y)
 best_model.fit(X_balanced, y_balanced, epochs=20, verbose=1)
 
 # Save the best model
-best_model.save('trained_model.h5')
+best_model.save('felix_trained_model.h5')
 

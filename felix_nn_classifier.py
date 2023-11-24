@@ -9,7 +9,7 @@ from imblearn.over_sampling import SMOTE
 from itertools import product
 import numpy as np
 import warnings
-
+import joblib
 warnings.filterwarnings('ignore')
 
 
@@ -49,9 +49,11 @@ print(f"Number of features in X_train: {X_train.shape[1]}")
 scaler = StandardScaler()
 X_train = scaler.fit_transform(X_train)
 X_test = scaler.transform(X_test)
+joblib.dump(scaler, 'felix_nn_classifier_scaler.joblib')
+print("DUMPED")
 
 # Instantiate SMOTE - can test with different number of neighbors
-smote = SMOTE(random_state=42)
+smote = SMOTE(random_state=42, k_neighbors=5, n_jobs=-1, sampling_strategy=0.6)
 # Resample the dataset
 X_train_balanced, y_train_balanced = smote.fit_resample(X_train, y_train)
 
@@ -101,10 +103,11 @@ def use_best_params(best_params):
         f'Test Loss (Binary Crossentropy): {test_loss}, Test Accuracy: {test_accuracy}, Test Binary Accuracy: {test_binary_accuracy}')
 
     # Save the best model
-    best_model.save('felix_node_permutation_trained_model.h5')
+    best_model.save('felix_0p6_ratio_5_neigh_smote_classifier.h5')
 
 
 best_params = find_best_hyperparameters()
+# best_params = {'optimizer': 'Adam', 'activation': 'relu', 'dropout_rate': 0.0, 'layer_nodes': [128, 128, 64]} # KNeighbour = 4 Test Loss (Binary Crossentropy): 0.3418712317943573, Test Accuracy: 0.926714301109314, Test Binary Accuracy: 0.926714301109314
 # best_params =  {'optimizer': 'Adam', 'activation': 'relu', 'dropout_rate': 0.0, 'layer_nodes': [128, 128, 64]} #Test Loss (Binary Crossentropy): 0.3443473279476166, Test Accuracy: 0.9223571419715881, Test Binary Accuracy: 0.9223571419715881
 # best_params={'optimizer': 'Adam', 'activation': 'relu', 'dropout_rate': 0.0, 'layer_nodes': [128, 128, 64, 32]} #Loss (Binary Crossentropy): 0.40981221199035645, Test Accuracy: 0.9097142815589905, Test Binary Accuracy: 0.9097142815589905
 # best_params = {'optimizer': 'Adam', 'activation': 'relu', 'dropout_rate': 0.0, 'layer_nodes': [128, 128, 64, 64]} #Test Loss (Binary Crossentropy): 0.4488109052181244, Test Accuracy: 0.920285701751709, Test Binary Accuracy: 0.920285701751709
