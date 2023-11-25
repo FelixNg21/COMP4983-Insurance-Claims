@@ -66,26 +66,6 @@ smote = SMOTE(random_state=42, k_neighbors=5, n_jobs=-1, sampling_strategy=0.6)
 # Resample the dataset
 X_train_balanced, y_train_balanced = smote.fit_resample(X_train, y_train)
 
-# Feature Selection with RFE
-# rf_classifier_for_rfe = RandomForestClassifier(random_state=42)
-# rfe = RFE(estimator=rf_classifier_for_rfe, n_features_to_select=10, verbose=2)  # Adjust the number of features
-# X_train_balanced = rfe.fit_transform(X_train_balanced, y_train_balanced)
-# X_test = rfe.transform(X_test)
-
-# print(f"Number of features in X_train_balanced: {X_train_balanced.shape[1]}")
-# print("Feature Ranking: ", rfe.ranking_)
-# print("Features Selected: ", rfe.support_)
-
-# Feature ranking array
-feature_ranking = [1, 1, 1, 6, 7, 2, 1, 1, 9, 1, 3, 1, 5, 8, 1, 1, 1, 4]
-
-# Select indices of important features (ranking of 1)
-important_features_indices = [i for i, rank in enumerate(feature_ranking) if rank < 7]
-
-# Select important features from datasets
-X_train_balanced = X_train_balanced[:, important_features_indices]
-X_test = X_test[:, important_features_indices]
-
 
 def find_best_hyperparameters():
     param_grid = {

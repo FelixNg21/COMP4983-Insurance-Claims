@@ -47,16 +47,14 @@ def create_model(optimizer='adam', activation='relu', dropout_rate=0.5, layer_no
                   metrics=['accuracy', 'binary_accuracy'])
     return model
 best_params = {'optimizer': 'Adam', 'activation': 'relu', 'dropout_rate': 0.0, 'layer_nodes': [12, 8]}
-base_classifier = KerasClassifier(build_fn=create_model, verbose=0, batch_size=16, epochs=20, **best_params)
+base_classifier = KerasClassifier(build_fn=create_model, verbose=1, batch_size=16, epochs=20, **best_params)
 # base_classifier = RandomForestClassifier(random_state=42)
 
 # Define oversampling techniques
 oversamplers = {
     'Random Oversampling': RandomOverSampler(sampling_strategy='auto', random_state=42),
     'SMOTE': SMOTE(sampling_strategy='auto', random_state=42),
-    'ADASYN': ADASYN(sampling_strategy='auto', random_state=42),
-    'SMOTE-ENN': SMOTEENN(sampling_strategy='auto', random_state=42),
-    'SMOTE-Tomek': SMOTETomek(sampling_strategy='auto', random_state=42)
+    'ADASYN': ADASYN(sampling_strategy='auto', random_state=42)
 }
 
 # Evaluate each oversampling technique using cross-validation
@@ -67,7 +65,7 @@ for oversampler_name, oversampler in oversamplers.items():
     print("Doing cross validation for", oversampler_name)
     pipeline = make_pipeline(oversampler, base_classifier)
     cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
-    scores = cross_val_score(pipeline, X, y, cv=cv, scoring=scoring_metric, verbose=1)
+    scores = cross_val_score(pipeline, X, y, cv=cv, scoring=scoring_metric, verbose=1, n_jobs=-1) #TODO change njobs
     results[oversampler_name] = scores
 
 # Print average performance for each oversampling technique

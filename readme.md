@@ -18,23 +18,27 @@ models_3 = LinearRegression(), KNeighborsRegressor()
 
 using felix's rebagg:
 
-| submission | regressor                              | mae    | f1     | submitted MAE's
-| :---:      | :---:                                  | :---:  | :--:   | :--:
-| 7          | VotingRegressor(models_1)              | 179.09 | 0.0916 | 152.2087
-| 8          | VotingRegressor(models_2)              | 187.36 | 0.0916 | 171.6480
-| 9          | VotingRegressor(models_3               | 183.45 | 0.0916 | 162.6934
-| 10         | BaggingRegressor(KNeighborsRegressor() | 176.04 | 0.21   | 141.6154
+| submission |               regressor                |  mae   |   f1   | submitted MAE's |
+|:----------:|:--------------------------------------:|:------:|:------:|:---------------:|
+|     7      |       VotingRegressor(models_1)        | 179.09 | 0.0916 |    152.2087     |
+|     8      |       VotingRegressor(models_2)        | 187.36 | 0.0916 |    171.6480     |
+|     9      |        VotingRegressor(models_3        | 183.45 | 0.0916 |    162.6934     |
+|     10     | BaggingRegressor(KNeighborsRegressor() | 176.04 |  0.21  |    141.6154     |
 
 Submission 2:
 
-| submission |               regressor                | classifier |  mae   |   f1   | submitted MAE's
-| :---:      |:--------------------------------------:|:----------:|:------:|:------:| :--:
-|1 | sepehr_random_forest_nonzero_regressor | felix_cnn  |148.5252|0.395722|116.11694249336313
-|2 | sepehr_random_forest_nonzero_regressor | felix_cnn  |    143.5130    |    0.394263    |111.90586037226072
-|3 |      felix_randomforestregressor       | felix_cnn  |    137.3244   |   0.392771  |107.65001542336874
-
-|4 |      felix_randomforestregressor       | felix_cnn  |    159.6154   |   0.395722 |134.14282078104668
-|5 |      felix_randomforestregressor       | felix_cnn  |    137.3244   |   0.392771  |107.65001542336874
+| submission |               regressor                |                      classifier                       |   mae    |    f1    |  submitted MAE's   | threshold |
+|:----------:|:--------------------------------------:|:-----------------------------------------------------:|:--------:|:--------:|:------------------:|:---------:|
+|     1      | sepehr_random_forest_nonzero_regressor |                       felix_cnn                       | 148.5252 | 0.395722 | 116.11694249336313 |    0.5    |
+|     2      | sepehr_random_forest_nonzero_regressor |                       felix_cnn                       | 143.5130 | 0.394263 | 111.90586037226072 |    0.6    | 
+|     3      | sepehr_random_forest_nonzero_regressor |                       felix_cnn                       | 137.3244 | 0.392771 | 107.65001542336874 |    0.7    |
+|     4      |      felix_randomforestregressor       |                       felix_cnn                       | 159.6154 | 0.395722 | 134.14282078104668 |    0.5    |
+|     5      |      felix_randomforestregressor       |                       felix_cnn                       | 154.0737 | 0.394263 | 128.86453245994005 |    0.6    |
+|     6      |      felix_randomforestregressor       |                       felix_cnn                       | 146.8713 | 0.392771 | 122.99490440355646 |    0.7    |  
+|     7      |      felix_randomforestregressor       |         sepehr_random_forest_classifier_fixed         | 110.2490 | 0.136443 | 97.49778169848467  |    n/a    |
+|     8      | sepehr_random_forest_nonzero_regressor |         sepehr_random_forest_classifier_fixed         | 110.0505 | 0.136443 | 92.67721139644426  |    n/a    |
+|     9      | sepehr_random_forest_nonzero_regressor | sepehr_reduced_feature_random_forest_classifier_model | 130.9399 | 0.413855 | 83.62310126303547  |    n/a    |
+|     10     |      felix_randomforestregressor       |         sepehr_random_forest_classifier_fixed         | 110.2490 | 0.136443 | 97.49778169848467  |    n/a    |
 
 There are a lot of labels with value 0 in the dataset. This is indicative of an imbalanced dataset.
 Upon performing linear regression on the data, we find an MAE of 204.
