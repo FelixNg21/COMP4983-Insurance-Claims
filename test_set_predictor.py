@@ -26,16 +26,21 @@ scaler_nonzero = joblib.load('scaler_nonzero.joblib')
 X_train2 = scaler_nonzero.transform(X_train2)
 X_test2 = scaler_nonzero.transform(X_test2)
 
+
 # Standardize features
 scaler = joblib.load("felix_nn_classifier_scaler.joblib")
 X_train = scaler.transform(X_train)
 X_test = scaler.transform(X_test)
 
+# apply PCA to classifier
+pca = joblib.load("felix_nn_classifier_pca.joblib")
+X_train_classifier = pca.transform(X_train)
+X_test_classifier = pca.transform(X_test)
 
 # Step 2: Load the binary Keras model
 # for .h5 models
-binary_model = keras.models.load_model('felix_classifier.h5')
-binary_model_training = keras.models.load_model('felix_classifier.h5')
+binary_model = keras.models.load_model('felix_ros_pca_10epoch_classifier_model.h5')
+binary_model_training = keras.models.load_model('felix_ros_pca_10epoch_classifier_model.h5')
 
 # for .joblib models
 # binary_model = joblib.load("sepehr_logistic_regression_classifier_model.joblib")
@@ -55,7 +60,7 @@ binary_labels_training = (data['ClaimAmount'] != 0).astype(int)
 binary_labels_test = (final_predictions_training != 0).astype(int)
 
 
-test_set_prediction_thresholds = [0.5, 0.6, 0.7]
+test_set_prediction_thresholds = [0.5]
 
 for idx, threshold in enumerate(test_set_prediction_thresholds):
 
@@ -124,5 +129,6 @@ for idx, threshold in enumerate(test_set_prediction_thresholds):
 
     # Step 6: Save the predictions in a new CSV file
     # checkpointnumber_groupnumber_submissionnumber.csv
-    predictions_df.to_csv(f'2_4_{idx+1}.csv', index=False)
-    print(f"Predictions saved to '2_4_{idx+1}.csv'")
+    predictions_df.to_csv(f'3_4_{idx+6}.csv', index=False)
+    print(f"Predictions saved to '3_4_{idx+6}.csv'")
+

@@ -1,6 +1,10 @@
+# used this to determine the best oversampler: RandomOversampling
+
+import joblib
 import keras.models
 import numpy as np
 import pandas as pd
+from keras.saving.save import load_model
 from sklearn.model_selection import cross_val_score, StratifiedKFold, train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from keras.wrappers.scikit_learn import KerasClassifier
@@ -32,7 +36,6 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 # print number of features in the training set
 print(f"Number of features in X_train: {X_train.shape[1]}")
 
-# Define the base classifier
 def create_model(optimizer='adam', activation='relu', dropout_rate=0.5, layer_nodes=None):
     model = keras.Sequential()
     for i, nodes in enumerate(layer_nodes):
@@ -53,8 +56,7 @@ base_classifier = KerasClassifier(build_fn=create_model, verbose=1, batch_size=1
 # Define oversampling techniques
 oversamplers = {
     'Random Oversampling': RandomOverSampler(sampling_strategy='auto', random_state=42),
-    'SMOTE': SMOTE(sampling_strategy='auto', random_state=42),
-    'ADASYN': ADASYN(sampling_strategy='auto', random_state=42)
+    'SMOTE': SMOTE(sampling_strategy='auto', random_state=42)
 }
 
 # Evaluate each oversampling technique using cross-validation
@@ -65,7 +67,8 @@ for oversampler_name, oversampler in oversamplers.items():
     print("Doing cross validation for", oversampler_name)
     pipeline = make_pipeline(oversampler, base_classifier)
     cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
-    scores = cross_val_score(pipeline, X, y, cv=cv, scoring=scoring_metric, verbose=1, n_jobs=-1) #TODO change njobs
+    scores = cross_val_score(pipeline, X, y, cv=cv, scoring=scoring_metric, verbose=1, n_jobs=1) #TODO change njobs
+
     results[oversampler_name] = scores
 
 # Print average performance for each oversampling technique

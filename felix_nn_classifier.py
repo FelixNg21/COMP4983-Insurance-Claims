@@ -5,7 +5,7 @@ from tensorflow import keras
 from keras import layers
 from keras.callbacks import EarlyStopping
 from scikeras.wrappers import KerasClassifier
-from imblearn.over_sampling import SMOTE
+from imblearn.over_sampling import SMOTE, RandomOverSampler
 from itertools import product
 import numpy as np
 import warnings
@@ -61,10 +61,12 @@ X_test = scaler.transform(X_test)
 joblib.dump(scaler, 'felix_nn_classifier_scaler.joblib')
 print("DUMPED")
 
-# Instantiate SMOTE - can test with different number of neighbors
-smote = SMOTE(random_state=42, k_neighbors=5, n_jobs=-1, sampling_strategy=0.6)
-# Resample the dataset
-X_train_balanced, y_train_balanced = smote.fit_resample(X_train, y_train)
+# # Instantiate SMOTE - can test with different number of neighbors
+# smote = SMOTE(random_state=42, k_neighbors=5, n_jobs=-1, sampling_strategy=0.6)
+# # Resample the dataset
+# X_train_balanced, y_train_balanced = smote.fit_resample(X_train, y_train)
+ros = RandomOverSampler(sampling_strategy=0.5, random_state=42)
+X_train_balanced, y_train_balanced = ros.fit_resample(X_train, y_train)
 
 
 def find_best_hyperparameters():
@@ -104,7 +106,7 @@ def use_best_params(best_params):
     # Build and fit the best model
     best_model = create_model(**best_params)
     print("Best hyperparameters:", best_params)
-    best_model.fit(X_train_balanced, y_train_balanced, epochs=20, verbose=1)
+    best_model.fit(X_train_balanced, y_train_balanced, epochs=10, verbose=1)
 
     # Predictions for evaluation
     y_pred_train = best_model.predict(X_train_balanced)
@@ -131,15 +133,16 @@ def use_best_params(best_params):
     y_full = np.concatenate((y_train_balanced, y_test), axis=0)
 
     # Train the model on the full dataset
-    best_model.fit(X_full, y_full, epochs=20, verbose=1)
+    best_model.fit(X_full, y_full, epochs=12, verbose=1)
 
     # Save the best model
-    best_model.save('felix_node_permutation_trained_model.h5')
+    best_model.save('felix_ros_classifier_model.h5')
 
 
-best_params = find_best_hyperparameters()
+# best_params = find_best_hyperparameters()
+# best_params = {'optimizer': 'Adam', 'activation': 'relu', 'dropout_rate': 0.0, 'layer_nodes': [12, 8]}
 # best_params = {'optimizer': 'Adam', 'activation': 'relu', 'dropout_rate': 0.0, 'layer_nodes': [128, 128, 64]} # KNeighbour = 4 Test Loss (Binary Crossentropy): 0.3418712317943573, Test Accuracy: 0.926714301109314, Test Binary Accuracy: 0.926714301109314
-# best_params =  {'optimizer': 'Adam', 'activation': 'relu', 'dropout_rate': 0.0, 'layer_nodes': [128, 128, 64]} #Test Loss (Binary Crossentropy): 0.3443473279476166, Test Accuracy: 0.9223571419715881, Test Binary Accuracy: 0.9223571419715881
+best_params =  {'optimizer': 'Adam', 'activation': 'relu', 'dropout_rate': 0.0, 'layer_nodes': [128, 128, 64]} #Test Loss (Binary Crossentropy): 0.3443473279476166, Test Accuracy: 0.9223571419715881, Test Binary Accuracy: 0.9223571419715881
 # best_params={'optimizer': 'Adam', 'activation': 'relu', 'dropout_rate': 0.0, 'layer_nodes': [128, 128, 64, 32]} #Loss (Binary Crossentropy): 0.40981221199035645, Test Accuracy: 0.9097142815589905, Test Binary Accuracy: 0.9097142815589905
 # best_params = {'optimizer': 'Adam', 'activation': 'relu', 'dropout_rate': 0.0, 'layer_nodes': [128, 128, 64, 64]} #Test Loss (Binary Crossentropy): 0.4488109052181244, Test Accuracy: 0.920285701751709, Test Binary Accuracy: 0.920285701751709
 # Best hyperparameters: {'optimizer': 'Adam', 'activation': 'relu', 'dropout_rate': 0.0, 'layer_nodes': [11, 3]} # Test Loss (Binary Crossentropy): 0.7031096816062927, Test Accuracy: 0.607785701751709, Test Binary Accuracy: 0.607785701751709
