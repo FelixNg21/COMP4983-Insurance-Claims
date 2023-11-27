@@ -22,12 +22,14 @@ X_train = data.iloc[:, 1:-1]  # Features
 X_train = np.array(X_train)
 X_train2 = data.iloc[:, 1:-1]  # Features
 X_train2 = np.array(X_train2)
+
+# scale the regression data
 scaler_nonzero = joblib.load('scaler_nonzero.joblib')
 X_train2 = scaler_nonzero.transform(X_train2)
 X_test2 = scaler_nonzero.transform(X_test2)
 
 
-# Standardize features
+# scale the classification data
 scaler = joblib.load("felix_nn_classifier_scaler.joblib")
 X_train = scaler.transform(X_train)
 X_test = scaler.transform(X_test)
