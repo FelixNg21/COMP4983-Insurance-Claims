@@ -23,6 +23,8 @@ OUTLIER = 5000
 # Load and prepare the dataset
 data = pd.read_csv('trainingset.csv')
 non_zero_data = data[data['ClaimAmount'] > 0]
+X_non_zero_with_outlier = non_zero_data.iloc[:, 1:-1]
+y_non_zero_with_outlier = non_zero_data['ClaimAmount']
 
 #######
 # Check if we need to remove outliers!!!
@@ -33,7 +35,7 @@ y_non_zero_no_outlier = non_zero_data_no_outlier['ClaimAmount']
 
 # Standardize features
 scaler = StandardScaler()
-X_non_zero_scaled = scaler.fit_transform(X_non_zero)
+X_non_zero_no_outlier_scaled = scaler.fit_transform(X_non_zero_no_outlier)
 
 
 # param_grid = {
@@ -112,31 +114,31 @@ joblib.dump(best_model, f'gridsearch_nonzeroreg_gradboost_{OUTLIER}outlier.jobli
 #     model_performance[model.__class__.__name__] = (mse, mae)
 
 # Identify the best model (lowest MAE)
-best_model_name = min(model_performance, key=lambda k: model_performance[k][1])
-print(best_model_name)
-best_model = [model for model in models if model.__class__.__name__ == best_model_name][0]
-
-# Fit the best model on the entire dataset
-best_model.fit(X_non_zero_scaled, y_non_zero)
-
-
-# Step 1: Save the model
-joblib.dump(best_model, 'trained_model_nonzero.pkl')
-
-# Step 2: Load the model back
-loaded_model = joblib.load('trained_model_nonzero.pkl')
-
-# Step 3: Perform a test prediction
-test_prediction = loaded_model.predict(X_non_zero)
-mae = mean_absolute_error(y_non_zero, test_prediction)
-
-# Display the test prediction
-print("Test Prediction:", test_prediction)
-print("MAE:", mae)
-
-# Step 4: Optionally compare model parameters or attributes
-# (This step depends on the kind of model you are using)
-# Example for a RandomForestRegressor
-if hasattr(best_model, 'n_estimators'):
-    print("Original model's n_estimators:", best_model.n_estimators)
-    print("Loaded model's n_estimators:", loaded_model.n_estimators)
+# best_model_name = min(model_performance, key=lambda k: model_performance[k][1])
+# print(best_model_name)
+# best_model = [model for model in models if model.__class__.__name__ == best_model_name][0]
+#
+# # Fit the best model on the entire dataset
+# best_model.fit(X_non_zero_no_outlier_scaled, y_non_zero)
+#
+#
+# # Step 1: Save the model
+# joblib.dump(best_model, 'trained_model_nonzero.pkl')
+#
+# # Step 2: Load the model back
+# loaded_model = joblib.load('trained_model_nonzero.pkl')
+#
+# # Step 3: Perform a test prediction
+# test_prediction = loaded_model.predict(X_non_zero_no_outlier)
+# mae = mean_absolute_error(y_non_zero, test_prediction)
+#
+# # Display the test prediction
+# print("Test Prediction:", test_prediction)
+# print("MAE:", mae)
+#
+# # Step 4: Optionally compare model parameters or attributes
+# # (This step depends on the kind of model you are using)
+# # Example for a RandomForestRegressor
+# if hasattr(best_model, 'n_estimators'):
+#     print("Original model's n_estimators:", best_model.n_estimators)
+#     print("Loaded model's n_estimators:", loaded_model.n_estimators)

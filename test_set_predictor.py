@@ -51,15 +51,15 @@ X_test = scaler.transform(X_test)
 # binary_model_training = keras.models.load_model('sepehr_nn_classifier_model.h5', compile=False)
 
 # for .joblib models
-# binary_model = joblib.load("sepehr_logistic_regression_classifier_model.joblib")
-# binary_model_training = joblib.load("sepehr_logistic_regression_classifier_model.joblib")
+binary_model = joblib.load("sarah_best_model_tuned.joblib")
+binary_model_training = joblib.load("sarah_best_model_tuned.joblib")
 
 # Step 3: Perform classification on the test set
-# binary_predictions_training = binary_model_training.predict(X_train)
-# binary_predictions = binary_model.predict(X_test)
+binary_predictions_training = binary_model_training.predict(X_train)
+binary_predictions = binary_model.predict(X_test)
 
-binary_predictions_training = binary_model_training.predict(X_train_classifier)
-binary_predictions = binary_model.predict(X_test_classifier)
+# binary_predictions_training = binary_model_training.predict(X_train_classifier)
+# binary_predictions = binary_model.predict(X_test_classifier)
 pd_binary_pred = pd.DataFrame(binary_predictions)
 
 
