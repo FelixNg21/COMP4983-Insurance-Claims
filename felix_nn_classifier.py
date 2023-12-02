@@ -67,6 +67,8 @@ print("DUMPED")
 # X_train_balanced, y_train_balanced = smote.fit_resample(X_train, y_train)
 ros = RandomOverSampler(sampling_strategy=0.5, random_state=42)
 X_train_balanced, y_train_balanced = ros.fit_resample(X_train, y_train)
+joblib.dump(ros, 'felix_nn_classifier_ros.joblib')
+quit()
 
 
 def find_best_hyperparameters():

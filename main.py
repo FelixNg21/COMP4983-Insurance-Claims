@@ -101,38 +101,38 @@ def lin_reg(data):
     print('Coefficient of Determination = ', CoD)
 
 
-# load data and remove first column (Row Index)
-train_data = pd.read_csv('trainingset.csv').iloc[:, 1:]
+# # load data and remove first column (Row Index)
+# train_data = pd.read_csv('trainingset.csv').iloc[:, 1:]
+#
+# test_data = pd.read_csv('testset.csv')
+# resampler = Resampler(train_data, 0.1)
+# smoter_data_label, smoter_data_feature = resampler.smoter()
+# gauss_data_label, gauss_data_feature = resampler.gauss()
+# wercs_data_label, wercs_data_feature = resampler.wercs()
+#
+# smoter_data_combined = pd.concat([pd.DataFrame(smoter_data_label), pd.DataFrame(smoter_data_feature)], axis=1)
+# smoter_data_combined.columns = [*smoter_data_combined.columns[:-1], 'ClaimAmount']
+# gauss_data_combined = pd.concat([pd.DataFrame(gauss_data_label), pd.DataFrame(gauss_data_feature)], axis=1)
+# gauss_data_combined.columns = [*gauss_data_combined.columns[:-1], 'ClaimAmount']
+# wercs_data_combined = pd.concat([pd.DataFrame(wercs_data_label), pd.DataFrame(wercs_data_feature)], axis=1)
+# wercs_data_combined.columns = [*wercs_data_combined.columns[:-1], 'ClaimAmount']
 
-test_data = pd.read_csv('testset.csv')
-resampler = Resampler(train_data, 0.1)
-smoter_data_label, smoter_data_feature = resampler.smoter()
-gauss_data_label, gauss_data_feature = resampler.gauss()
-wercs_data_label, wercs_data_feature = resampler.wercs()
-
-smoter_data_combined = pd.concat([pd.DataFrame(smoter_data_label), pd.DataFrame(smoter_data_feature)], axis=1)
-smoter_data_combined.columns = [*smoter_data_combined.columns[:-1], 'ClaimAmount']
-gauss_data_combined = pd.concat([pd.DataFrame(gauss_data_label), pd.DataFrame(gauss_data_feature)], axis=1)
-gauss_data_combined.columns = [*gauss_data_combined.columns[:-1], 'ClaimAmount']
-wercs_data_combined = pd.concat([pd.DataFrame(wercs_data_label), pd.DataFrame(wercs_data_feature)], axis=1)
-wercs_data_combined.columns = [*wercs_data_combined.columns[:-1], 'ClaimAmount']
-
-resampled_data = [smoter_data_combined, gauss_data_combined, wercs_data_combined]
-
-
-for idx, data in enumerate(resampled_data):
-    rlm = rl.LinearModel(data, show_plot=False)
-    rlm.ridge(0, 20)
-    rlm.lasso(0, 20)
-    ridge_model = Ridge(alpha=rlm.get_ridge_alpha())
-    lasso_model = Lasso(alpha=rlm.get_lasso_alpha())
-    models = [ridge_model, lasso_model]
-    for idx2, model in enumerate(models):
-        model.fit(data.iloc[:, :-1], data.iloc[:, -1])
-        predict = model.predict(test_data.iloc[:, 1:])
-        mae = np.mean(np.abs(predict - test_data.iloc[:, -1]))
-        print(mae)
-        pd.DataFrame(predict).to_csv(f'submission_resamp{idx}_model{idx2}.csv', index=False)
+# resampled_data = [smoter_data_combined, gauss_data_combined, wercs_data_combined]
+#
+#
+# for idx, data in enumerate(resampled_data):
+#     rlm = rl.LinearModel(data, show_plot=False)
+#     rlm.ridge(0, 20)
+#     rlm.lasso(0, 20)
+#     ridge_model = Ridge(alpha=rlm.get_ridge_alpha())
+#     lasso_model = Lasso(alpha=rlm.get_lasso_alpha())
+#     models = [ridge_model, lasso_model]
+#     for idx2, model in enumerate(models):
+#         model.fit(data.iloc[:, :-1], data.iloc[:, -1])
+#         predict = model.predict(test_data.iloc[:, 1:])
+#         mae = np.mean(np.abs(predict - test_data.iloc[:, -1]))
+#         print(mae)
+#         pd.DataFrame(predict).to_csv(f'submission_resamp{idx}_model{idx2}.csv', index=False)
 
 
 # # determine alpha values for ridge and lasso regression
@@ -142,19 +142,18 @@ for idx, data in enumerate(resampled_data):
 # ridge_alpha = rl.get_ridge_alpha()
 # lasso_alpha = rl.get_lasso_alpha()
 
-# regression_model_default = RandomForestRegressor(n_estimators=50, max_features=0.5, n_jobs=-1,
-#                                                  random_state=0)
-# regression_model_ridge = Ridge(alpha=ridge_alpha)
-# regression_model_lasso = Lasso(alpha=lasso_alpha)
-#
-# models = [regression_model_default, regression_model_ridge, regression_model_lasso]
+regression_model_default = RandomForestRegressor(n_estimators=50, max_features=0.5, n_jobs=-1,
+                                                 random_state=0)
+
+models = [regression_model_default]
 
 # determine best values for smoter/gauss/wercs resampling techniques
-# for model in models:
-#     reg = imb.ImbalancedDatasetReg('trainingset.csv', 'ClaimAmount', 0.1, model)
-#     reg.no_resampling()
-#     reg.smoter()
-#     reg.gauss()
-#     reg.wercs()
+for model in models:
+    reg = imb('trainingset.csv', 'ClaimAmount', 16000, model, performance=True)
+    reg.no_resampling()
+    reg.smoter()
+    reg.gauss()
+    reg.wercs()
+
 
 

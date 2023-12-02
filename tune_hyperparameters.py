@@ -27,6 +27,7 @@ y = data['ClaimLabel']
 # scale the data
 scaler = StandardScaler()
 X = scaler.fit_transform(X)
+joblib.dump(scaler, 'sarah_best_model_tuned_scaler.joblib')
 
 # Split the data into training and testing sets
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
@@ -56,20 +57,21 @@ rfc = RandomForestClassifier(random_state=42)
 
 
 # Define the pipeline with SMOTE and the classifier
-pipeline = Pipeline(steps=[('ros', ros), ('pca', pca), ('rfc', rfc)])
+pipeline = Pipeline(steps=[('ros', ros), ('rfe', rfe), ('pca', pca), ('rfc', rfc)])
 
 # Define the parameter grid for hyperparameter tuning
 param_grid = {
-    'ros__sampling_strategy': ['auto', 0.5, 0.75, 1.0],
+    'ros__sampling_strategy': [0.5],
+    'rfe__n_features_to_select': [10, 11, 12, 13, 14, 15],  # Adjust the number of features
     'pca__n_components': ['mle', 0.95, 0.9, 0.85, 0.8, 0.75],
-    'rfc__n_estimators': [100, 200, 300],
+    'rfc__n_estimators': [100, 200],
     'rfc__max_depth': [None, 15, 30],
-    'rfc__min_samples_split': [2, 5, 10],
-    'rfc__min_samples_leaf': [1, 2, 4]
+    'rfc__min_samples_split': [2],
+    'rfc__min_samples_leaf': [1]
 }
 
 # Use GridSearchCV for hyperparameter tuning
-grid_search = GridSearchCV(estimator=pipeline, param_grid=param_grid, scoring='accuracy', cv=5, verbose=1, n_jobs=-1)
+grid_search = GridSearchCV(estimator=pipeline, param_grid=param_grid, scoring='accuracy', cv=5, verbose=1, n_jobs=16)
 grid_search.fit(X_train, y_train)
 
 # Print the best hyperparameters
